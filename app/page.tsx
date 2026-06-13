@@ -1,21 +1,40 @@
+
+"use client";
+
+import FilterSideBar from "@/src/components/FilterSideBar";
 import Footer from "@/src/components/Footer";
 import Header from "@/src/components/Header";
+import { useState } from "react";
 
 export default function Home() {
+
+  const [currentCategoria, setCurrentCategoria] = useState("todos");
+
+  // Função gatilho para o Cenário iii (Filtragem)
+  const handleCategoryChange = (categoryId: string) => {
+    setCurrentCategoria(categoryId);
+    
+    // ==========================================
+    // FUTURO GATILHO DO EXPERIMENTO:
+    // 1. Executar o algoritmo de filtragem (A ou B da telemetria)
+    // 2. Disparar a ferramenta de avaliação (Pop-up Likert)
+    // ==========================================
+    console.log(`Cenário iii disparado! Categoria: ${categoryId}`);
+  };
+
   return(
     <div>
       <Header />
 
-      <main className="flex-1 max-w-7xl w-full mx-auto px-4 py-6">  
+      <main className="flex-1 max-w-7xl w-full mx-auto px-0 py-6">  
         {/* Layout de Duas Colunas (Responsivo: empilha no mobile, divide no desktop) */}
         <div className="flex flex-col md:flex-row gap-6">
           {/* 1. ESPAÇO DA BARRA LATERAL (FILTROS) */}
-          <aside className="w-full md:w-64 shrink-0">
-            <div className="bg-white p-4 rounded-lg border border-gray-200 shadow-sm">
-              <h2 className="font-semibold text-gray-900 mb-4">Categorias</h2>
-              {/* O componente ou lista de filtros vai entrar aqui */}
-              <div className="text-xs text-gray-400 italic">Espaço do Cenário iii</div>
-            </div>
+          <aside className="w-full md:w-64 shrink-0">              
+            <FilterSideBar 
+              selectedCategoria={currentCategoria} 
+              onSelectCategoria={handleCategoryChange} 
+            />
           </aside>
 
           {/* 2. ESPAÇO PRINCIPAL (ORDENAÇÃO + PRODUTOS) */}
