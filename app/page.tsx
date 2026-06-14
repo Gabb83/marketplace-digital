@@ -4,7 +4,10 @@
 import FilterSideBar from "@/src/components/FilterSideBar";
 import Footer from "@/src/components/Footer";
 import Header from "@/src/components/Header";
+import ProductCard from "@/src/components/ProductCard";
 import SortBar from "@/src/components/SortBar";
+import { ProdutosMocks } from "@/src/data/products";
+
 import { useState } from "react";
 
 export default function Home() {
@@ -65,8 +68,12 @@ export default function Home() {
 
             {/* Grid de Cards de Produtos */}
             <div className="bg-white p-4 rounded-lg border border-gray-200 shadow-sm">
-              {/* Os produtos vão entrar aqui */}
-              <div className="text-xs text-gray-400 italic">Grid de Produtos</div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+              {ProdutosMocks.map((produto) => (
+                <ProductCard  produto={produto}
+                />
+              ))}
+            </div>
             </div>
           </section>
         </div>
