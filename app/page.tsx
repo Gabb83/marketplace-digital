@@ -4,6 +4,7 @@
 import FilterSideBar from "@/src/components/FilterSideBar";
 import Footer from "@/src/components/Footer";
 import Header from "@/src/components/Header";
+import SortBar from "@/src/components/SortBar";
 import { useState } from "react";
 
 export default function Home() {
@@ -20,6 +21,20 @@ export default function Home() {
     // 2. Disparar a ferramenta de avaliação (Pop-up Likert)
     // ==========================================
     console.log(`Cenário iii disparado! Categoria: ${categoryId}`);
+  };
+
+  const [currentSort, setCurrentSort] = useState("relevancia");
+
+  // Função gatilho para o Cenário ii (Ordenação)
+  const handleSortChange = (sortOption: string) => {
+    setCurrentSort(sortOption);
+
+    // ==========================================
+    // FUTURO GATILHO DO EXPERIMENTO:
+    // 1. Executar o algoritmo de ordenação
+    // 2. Disparar a ferramenta de avaliação (Pop-up Likert de responsividade)
+    // ==========================================
+    console.log(`Cenário ii disparado! Ordenação: ${sortOption}`);
   };
 
   return(
@@ -41,8 +56,11 @@ export default function Home() {
           <section className="flex-1">
             {/* Topbar de Ordenação */}
             <div className="bg-white p-4 rounded-lg border border-gray-200 shadow-sm mb-4">
-              {/* O botão/select de ordenação vai entrar aqui */}
-              <div className="text-xs text-gray-400 italic">Espaço do Cenário ii (Ordenação)</div>
+              <SortBar
+                currentSort={currentSort} 
+                onSortChange={handleSortChange} 
+                totalProdutos={12}
+              />
             </div>
 
             {/* Grid de Cards de Produtos */}
