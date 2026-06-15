@@ -1,14 +1,15 @@
 
 "use client";
 
+import { useState } from "react";
+
 import FilterSideBar from "@/src/components/FilterSideBar";
 import Footer from "@/src/components/Footer";
 import Header from "@/src/components/Header";
 import ProductCard from "@/src/components/ProductCard";
 import SortBar from "@/src/components/SortBar";
+import LikertPopup from "@/src/components/LikertPopup";
 import { ProdutosMocks } from "@/src/data/products";
-
-import { useState } from "react";
 
 export default function Home() {
 
@@ -18,15 +19,20 @@ export default function Home() {
   const handleCategoryChange = (categoryId: string) => {
     setCurrentCategoria(categoryId);
     
-    // ==========================================
-    // FUTURO GATILHO DO EXPERIMENTO:
-    // 1. Executar o algoritmo de filtragem (A ou B da telemetria)
-    // 2. Disparar a ferramenta de avaliação (Pop-up Likert)
-    // ==========================================
+    setPerguntaPopup("Como você avalia a fluidez e a velocidade da interface ao filtrar por essa categoria?");
+    setCenarioAtivo("filtragem");
     console.log(`Cenário iii disparado! Categoria: ${categoryId}`);
+
+    setTimeout(() => {
+      setIsPopupOpen(true);
+    }, 500);
   };
 
   const [currentSort, setCurrentSort] = useState("relevancia");
+
+  const [isPopupOpen, setIsPopupOpen] = useState(false);
+  const [perguntaPopup, setPerguntaPopup] = useState("");
+  const [cenarioAtivo, setCenarioAtivo] = useState<"ordenacao" | "filtragem" | "busca" | null>(null);
 
   // Função gatilho para o Cenário ii (Ordenação)
   const handleSortChange = (sortOption: string) => {
@@ -37,7 +43,29 @@ export default function Home() {
     // 1. Executar o algoritmo de ordenação
     // 2. Disparar a ferramenta de avaliação (Pop-up Likert de responsividade)
     // ==========================================
+
+    setPerguntaPopup("Como você avalia a responsividade da interface após acionar a ordenação dos produtos?");
+    setCenarioAtivo("ordenacao");
+    
+    setTimeout(() => {
+      setIsPopupOpen(true);
+    }, 500);
+
     console.log(`Cenário ii disparado! Ordenação: ${sortOption}`);
+  };
+
+  const handleSalvarTelemetria = (nota: number) => {
+    const dadosEvento = {
+      cenario: cenarioAtivo,
+      notaLikert: nota,
+      algoritmoRodando: "ESTRUTURA_A", // Isso será alternado dinamicamente pela dupla-blindagem depois
+      timestamp: new Date().toISOString(),
+    };
+
+    console.log(">>>> DADOS ENVIADOS PARA A TELEMETRIA INTERNA:", dadosEvento);
+    // Aqui entrará o seu fetch/axios para salvar no banco de dados do seu experimento
+    
+    setCenarioAtivo(null);
   };
 
   return(
@@ -80,6 +108,13 @@ export default function Home() {
       </main>
 
       <Footer />
+
+      <LikertPopup 
+        isOpen={isPopupOpen}
+        onClose={() => setIsPopupOpen(false)}
+        pergunta={perguntaPopup}
+        onEnviarResposta={handleSalvarTelemetria}
+      />
     </div>
   );
 }
