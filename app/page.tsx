@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 
 import FilterSideBar from "@/src/components/FilterSideBar";
 import Footer from "@/src/components/Footer";
@@ -34,16 +34,40 @@ export default function Home() {
   const [perguntaPopup, setPerguntaPopup] = useState("");
   const [cenarioAtivo, setCenarioAtivo] = useState<"ordenacao" | "filtragem" | "busca" | null>(null);
 
+  const produtosExibidos = useMemo(() => {
+    let produtosFiltrados = [...ProdutosMocks];
+
+    if(currentCategoria !== "todos") {
+      produtosFiltrados = produtosFiltrados.filter(
+        (p) => p.categoria === currentCategoria
+      );
+    }
+
+    return produtosFiltrados.sort((a, b) => {
+      const precoA = typeof a.preco === "string" ? parseFloat(a.preco) : a.preco;
+      const precoB = typeof b.preco === "string" ? parseFloat(b.preco) : b.preco;
+
+      if(currentSort === "preco-crescente") {
+        return precoA - precoB;
+      }
+
+      if(currentSort === "preco-decrescente") {
+        return precoB - precoA;
+      }
+
+      if(currentSort === "relevancia") {
+        return b.avaliacao - a.avaliacao;
+      }
+
+      return 0;
+
+    });
+
+  }, [currentCategoria, currentSort]); 
+
   // Função gatilho para o Cenário ii (Ordenação)
   const handleSortChange = (sortOption: string) => {
     setCurrentSort(sortOption);
-
-    // ==========================================
-    // FUTURO GATILHO DO EXPERIMENTO:
-    // 1. Executar o algoritmo de ordenação
-    // 2. Disparar a ferramenta de avaliação (Pop-up Likert de responsividade)
-    // ==========================================
-
     setPerguntaPopup("Como você avalia a responsividade da interface após acionar a ordenação dos produtos?");
     setCenarioAtivo("ordenacao");
     
@@ -90,16 +114,15 @@ export default function Home() {
               <SortBar
                 currentSort={currentSort} 
                 onSortChange={handleSortChange} 
-                totalProdutos={12}
+                totalProdutos={produtosExibidos.length}
               />
             </div>
 
             {/* Grid de Cards de Produtos */}
             <div className="bg-white p-4 rounded-lg border border-gray-200 shadow-sm">
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-              {ProdutosMocks.map((produto) => (
-                <ProductCard  produto={produto}
-                />
+              {produtosExibidos.map((produto) => (
+                <ProductCard key={produto.id} produto={produto} />
               ))}
             </div>
             </div>
