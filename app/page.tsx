@@ -1,7 +1,7 @@
 // src/app/page.tsx
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 import FilterSideBar from "@/src/components/FilterSideBar";
 import Footer from "@/src/components/Footer";
 import HeaderComponent from "@/src/components/Header"; 
@@ -10,104 +10,145 @@ import SortBar from "@/src/components/SortBar";
 import LikertPopup from "@/src/components/LikertPopup";
 import { ProdutosMocks } from "@/src/data/products";
 import { buscarNoArray, buscarNaHashTable } from "@/src/utils/algoritmosBusca";
+import { ArvoreBinariaBusca, embaralharProdutosDeterministico } from "@/src/utils/algoritmosOrdenacao";
 
 export default function Home() {
-  // Controle da Loja
+  // Controle de Estado da Loja
   const [currentCategoria, setCurrentCategoria] = useState("todos");
   const [currentSort, setCurrentSort] = useState("relevancia");
   const [termoBusca, setTermoBusca] = useState("");
 
-  // ESTADOS DO EXPERIMENTO PAREADO
-  const [etapaExperimento, setEtapaExperimento] = useState<"TERMO_1" | "TERMO_2" | "AVALIACAO_PRONTA">("TERMO_1");
+  // ESTADOS DO EXPERIMENTO PAREADO (Cenário II: Ordenação)
+  const [etapaExperimento, setEtapaExperimento] = useState<"ORDEM_1" | "ORDEM_2" | "AVALIACAO_PRONTA">("ORDEM_1");
   const [isPopupOpen, setIsPopupOpen] = useState(false);
 
-  // Processamento Dinâmico aplicando a estrutura da etapa atual
-  const produtosExibidos = useMemo(() => {
-    let dados = [...ProdutosMocks];
+  // TELEMETRIA INTERNA (Oculta do Usuário, visível apenas no payload final)
+  const [tempoArrayNativo, setTempoArrayNativo] = useState<number | null>(null);
+  const [tempoABBManual, setTempoABBManual] = useState<number | null>(null);
 
+  // PROCESSAMENTO CENTRAL DOS PRODUTOS
+  const { produtosProcessados, tempoExecucao } = useMemo(() => {
+    let dados = [...ProdutosMocks];
+    let t0 = 0;
+    let t1 = 0;
+    let tempoMedido = 0;
+
+    // 1. CENÁRIO I: BUSCA
     if (termoBusca.trim() !== "") {
-      // Se a busca foi feita na primeira etapa, roda O(n) Array
-      if (etapaExperimento === "TERMO_2") {
+      if (termoBusca.includes("99999")) {
         dados = buscarNoArray(dados, termoBusca);
-      } 
-      // Se a busca foi feita na segunda etapa, roda O(1) Hash Table
-      else if (etapaExperimento === "AVALIACAO_PRONTA") {
+      } else if (termoBusca.includes("100000")) {
         dados = buscarNaHashTable(dados, termoBusca);
       }
     }
 
-    // Filtro e Ordenação subsequentes padrão
+    // 2. CENÁRIO III: FILTRAGEM
     if (currentCategoria !== "todos") {
       dados = dados.filter((p) => p.categoria === currentCategoria);
     }
 
-    return dados.sort((a, b) => {
-      const precoA = typeof a.preco === "string" ? parseFloat(a.preco) : a.preco;
-      const precoB = typeof b.preco === "string" ? parseFloat(b.preco) : b.preco;
-      if (currentSort === "preco-crescente") return precoA - precoB;
-      if (currentSort === "preco-decrescente") return precoB - precoA;
-      return b.avaliacao - a.avaliacao;
-    });
+    // 3. CENÁRIO II: ORDENAÇÃO
+    if (currentSort === "relevancia") {
+      t0 = performance.now();
+      dados.sort((a, b) => b.avaliacao - a.avaliacao);
+      t1 = performance.now();
+      return { produtosProcessados: dados, tempoExecucao: t1 - t0 };
+    }
+
+    const criterio = currentSort === "preco-crescente" ? "crescente" : "decrescente";
+
+    // FASE 1: Roda a ordenação nativa (Timsort)
+    if (etapaExperimento === "ORDEM_1") {
+      t0 = performance.now();
+      dados.sort((a, b) => {
+        const precoA = typeof a.preco === "string" ? parseFloat(a.preco) : a.preco;
+        const precoB = typeof b.preco === "string" ? parseFloat(b.preco) : b.preco;
+        return criterio === "crescente" ? precoA - precoB : precoB - precoA;
+      });
+      t1 = performance.now();
+      tempoMedido = t1 - t0;
+      
+      return { produtosProcessados: dados, tempoExecucao: tempoMedido };
+    } 
+    // FASE 2: Força a construção da Árvore Binária de Busca Manual
+    else {
+      t0 = performance.now();
+      const dadosEmbaralhar = embaralharProdutosDeterministico(dados);
+      const abb = new ArvoreBinariaBusca(criterio);
+      dadosEmbaralhar.forEach(p => abb.inserir(p));
+      const resultadoOrdenado = abb.getProdutosOrdenados();
+      t1 = performance.now();
+      tempoMedido = t1 - t0;
+
+      return { produtosProcessados: resultadoOrdenado, tempoExecucao: tempoMedido };
+    }
+
   }, [currentCategoria, currentSort, termoBusca, etapaExperimento]);
 
-  // Captura e gerencia a submissão dos termos pareados
-  const handleSearchSubmit = (termo: string) => {
-    const termoTratado = termo.toLowerCase().trim();
+  // Captura os tempos em background sem renderizar nada na tela
+  useEffect(() => {
+    if (currentSort !== "relevancia") {
+      if (etapaExperimento === "ORDEM_2") {
+        setTempoArrayNativo(tempoExecucao);
+      } else if (etapaExperimento === "AVALIACAO_PRONTA") {
+        setTempoABBManual(tempoExecucao);
+      }
+    }
+  }, [tempoExecucao, etapaExperimento, currentSort]);
 
-    // FASE 1: O utilizador introduz qualquer texto que contenha o número 99999
-    if (etapaExperimento === "TERMO_1" && termoTratado.includes("99999")) {
-      setTermoBusca(termoTratado); // Passa o termo limpo para o algoritmo
-      setEtapaExperimento("TERMO_2"); 
-    } 
-    // FASE 2: O utilizador introduz qualquer texto que contenha o número 100000
-    else if (etapaExperimento === "TERMO_2" && termoTratado.includes("100000")) {
-      setTermoBusca(termoTratado);
+  const handleSearchSubmit = (termo: string) => {
+    setTermoBusca(termo.toLowerCase().trim());
+  };
+
+  const handleSortChange = (sortOption: string) => {
+    setCurrentSort(sortOption);
+
+    if (etapaExperimento === "ORDEM_1") {
+      setEtapaExperimento("ORDEM_2");
+    } else if (etapaExperimento === "ORDEM_2") {
       setEtapaExperimento("AVALIACAO_PRONTA");
       
-      // Janela de observação de 3 segundos para notar a velocidade da Hash Table
+      // Delay para o usuário processar a sensação visual antes do Pop-up bloquear a tela
       setTimeout(() => {
         setIsPopupOpen(true);
-      }, 3000); 
-    } else {
-      // Alerta dinâmico simplificado para guiar o utilizador sem margem de erro
-      alert(
-        etapaExperimento === "TERMO_1" 
-          ? "Por favor, introduza o número do primeiro modelo: 99999" 
-          : "Boa! Agora limpe o campo e introduza o número do segundo modelo: 100000"
-      );
+      }, 2500);
     }
   };
 
+  // Gravação científica unindo a resposta do usuário com os milissegundos ocultos coletados
   const handleSalvarTelemetria = (notaComparativa: number) => {
     const payloadCientifico = {
-      tipoExperimento: "PAREADO_WITHIN_SUBJECT",
-      termo1_estrutura: "BUSCA_SEQUENCIAL_ARRAY_ON",
-      termo2_estrutura: "BUSCA_HASH_TABLE_O1",
-      respostaMétricaLikert: notaComparativa, 
+      tipoExperimento: "PAREADO_WITHIN_SUBJECT_ORDENACAO",
+      tempo_timsort_nativo_ms: tempoArrayNativo ? parseFloat(tempoArrayNativo.toFixed(4)) : null,
+      tempo_abb_manual_ms: tempoABBManual ? parseFloat(tempoABBManual.toFixed(4)) : null,
+      respostaMetricaLikert: notaComparativa, 
       timestamp: new Date().toISOString(),
     };
 
-    console.log("%c>>>> DADOS FINAIS GRAVADOS COM SUCESSO PARA O TESTE T PAREADO:", "color: #3b82f6; font-weight: bold", payloadCientifico);
+    // Aqui os dados saem completos e pareados para sua análise estatística
+    console.log("%c>>>> DADOS ENVIADOS PARA A BASE DE DADOS (OCULTOS DO USUÁRIO):", "color: #22c55e; font-weight: bold;", payloadCientifico);
     
-    // Reseta o fluxo caso queira testar novamente
+    // Reseta o fluxo para o próximo avaliador
     setIsPopupOpen(false);
-    setTermoBusca("");
-    setEtapaExperimento("TERMO_1");
+    setCurrentSort("relevancia");
+    setTempoArrayNativo(null);
+    setTempoABBManual(null);
+    setEtapaExperimento("ORDEM_1");
   };
 
   return (
     <div className="flex flex-col min-h-screen bg-gray-50">
       
-      {/* BARRA DE ORIENTAÇÃO DO USUÁRIO REFINADA COM TEXTO + NÚMERO */}
+      {/* BARRA DE ORIENTAÇÃO DO USUÁRIO (TEXTOS NEUTROS, SEM SPOILER DE TEMPO) */}
       <div className="w-full bg-blue-600 text-white text-center py-2 px-4 text-sm font-medium shadow-inner flex items-center justify-center gap-2">
-        {etapaExperimento === "TERMO_1" && (
-          <span>🔬 <strong>Passo 1 de 2 (Varredura Linear):</strong> Procure pelo código <span className="bg-white text-blue-700 px-1.5 py-0.5 rounded font-bold mx-1">99999</span> na barra de busca e clique na lupa.</span>
+        {etapaExperimento === "ORDEM_1" && (
+          <span>🔬 <strong>Passo 1 de 2:</strong> Altere a ordenação no menu abaixo (ex: <i>Menor Preço</i>) para processar o primeiro cenário.</span>
         )}
-        {etapaExperimento === "TERMO_2" && (
-          <span>🔬 <strong>Passo 2 de 2 (Acesso por Chave):</strong> Excelente! Agora limpe o campo, busque por <span className="bg-white text-blue-700 px-1.5 py-0.5 rounded font-bold mx-1">100000</span> e compare a resposta.</span>
+        {etapaExperimento === "ORDEM_2" && (
+          <span>🔬 <strong>Passo 2 de 2:</strong> Muito bem. Agora mude a ordenação para <strong>qualquer outra opção</strong> para processar o segundo cenário.</span>
         )}
         {etapaExperimento === "AVALIACAO_PRONTA" && (
-          <span>🎉 Análise concluída! Responda à escala comparativa exibida na tela.</span>
+          <span>🎉 Teste concluído! Por favor, responda à escala de percepção na tela.</span>
         )}
       </div>
 
@@ -120,19 +161,23 @@ export default function Home() {
           </aside>
 
           <section className="flex-1">
+            
+            {/* O painel visual de métricas foi totalmente removido daqui para evitar o viés de confirmação */}
+
             <div className="bg-white p-4 rounded-lg border border-gray-200 shadow-sm mb-4">
-              <SortBar currentSort={currentSort} onSortChange={setCurrentSort} totalProdutos={produtosExibidos.length} />
+              <SortBar currentSort={currentSort} onSortChange={handleSortChange} totalProdutos={produtosProcessados.length} />
             </div>
 
             <div className="bg-white p-4 rounded-lg border border-gray-200 shadow-sm">
-              {produtosExibidos.length > 0 ? (
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {produtosExibidos.slice(0, 24).map((produto) => (
+              {produtosProcessados.length > 0 ? (
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                  {/* Renderização limitada para isolar puramente a CPU algorítmica */}
+                  {produtosProcessados.slice(0, 20).map((produto) => (
                     <ProductCard key={produto.id} produto={produto} />
                   ))}
                 </div>
               ) : (
-                <div className="py-12 text-center text-gray-400 text-sm">Nenhum produto listado para a busca atual.</div>
+                <div className="py-12 text-center text-gray-400 text-sm">Nenhum produto listado para os filtros aplicados.</div>
               )}
             </div>
           </section>
