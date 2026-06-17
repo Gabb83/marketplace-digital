@@ -1,145 +1,126 @@
 // src/app/page.tsx
 "use client";
 
-import { useMemo, useState, useEffect } from "react";
-
+import { useMemo, useState } from "react";
+import Header from "@/src/components/FilterSideBar"; // Supondo o caminho correto
 import FilterSideBar from "@/src/components/FilterSideBar";
 import Footer from "@/src/components/Footer";
-import Header from "@/src/components/Header";
+import HeaderComponent from "@/src/components/Header"; // Renomeado para evitar conflito
 import ProductCard from "@/src/components/ProductCard";
 import SortBar from "@/src/components/SortBar";
 import LikertPopup from "@/src/components/LikertPopup";
 import { ProdutosMocks } from "@/src/data/products";
-import { buscarNoArray, buscarNoHashTable } from "@/src/utils/algoritmosBusca"; // Funções utilitárias do passo anterior
+import { buscarNoArray, buscarNaHashTable } from "@/src/utils/algoritmosBusca";
 
 export default function Home() {
-  // Estados de controle da Loja
+  // Controle da Loja
   const [currentCategoria, setCurrentCategoria] = useState("todos");
   const [currentSort, setCurrentSort] = useState("relevancia");
-  const [termoBusca, setTermoBusca] = useState(""); // Novo estado para o Cenário i
+  const [termoBusca, setTermoBusca] = useState("");
 
-  // CONTROLE DO EXPERIMENTO (Isolamento por sessão)
-  const [estruturaDeDadosAtiva, setEstruturaDeDadosAtiva] = useState<"ARRAY_ESTRUTURA" | "HASH_ESTRUTURA">("ARRAY_ESTRUTURA");
-
-  useEffect(() => {
-    // Sorteia a estrutura da sessão do utilizador para evitar viés estatístico
-    const estruturaSorteada = Math.random() > 0.5 ? "ARRAY_ESTRUTURA" : "HASH_ESTRUTURA";
-    setEstruturaDeDadosAtiva(estruturaSorteada);
-    console.log(`[Metodologia] Sessão fixada na estrutura: ${estruturaSorteada}`);
-  }, []);
-
-  // Estados do Pop-up Likert
+  // ESTADOS DO EXPERIMENTO PAREADO
+  // Etapas: "TERMO_1" (Fase inicial), "TERMO_2" (Fase intermediária), "AVALIACAO_PRONTA" (Fim do teste)
+  const [etapaExperimento, setEtapaExperimento] = useState<"TERMO_1" | "TERMO_2" | "AVALIACAO_PRONTA">("TERMO_1");
   const [isPopupOpen, setIsPopupOpen] = useState(false);
-  const [perguntaPopup, setPerguntaPopup] = useState("");
-  const [cenarioAtivo, setCenarioAtivo] = useState<"ordenacao" | "filtragem" | "busca" | null>(null);
 
-  // PROCESSAMENTO CENTRAL DOS PRODUTOS (Busca + Filtro + Ordenação)
+  // Processamento Dinâmico aplicando a estrutura da etapa atual
   const produtosExibidos = useMemo(() => {
-    let dadosProcessados = [...ProdutosMocks];
+    let dados = [...ProdutosMocks];
 
-    // 1. APLICAR O CENÁRIO I: BUSCA (Baseado na estrutura da sessão)
     if (termoBusca.trim() !== "") {
-      if (estruturaDeDadosAtiva === "ARRAY_ESTRUTURA") {
-        dadosProcessados = buscarNoArray(dadosProcessados, termoBusca);
-      } else {
-        dadosProcessados = buscarNoHashTable(dadosProcessados, termoBusca);
+      // Se a busca foi feita na primeira etapa, roda O(n) Array
+      if (etapaExperimento === "TERMO_2") {
+        dados = buscarNoArray(dados, termoBusca);
+      } 
+      // Se a busca foi feita na segunda etapa, roda O(1) Hash Table
+      else if (etapaExperimento === "AVALIACAO_PRONTA") {
+        dados = buscarNaHashTable(dados, termoBusca);
       }
     }
 
-    // 2. APLICAR O CENÁRIO III: FILTRAGEM
+    // Filtro e Ordenação subsequentes padrão
     if (currentCategoria !== "todos") {
-      dadosProcessados = dadosProcessados.filter((p) => p.categoria === currentCategoria);
+      dados = dados.filter((p) => p.categoria === currentCategoria);
     }
 
-    // 3. APLICAR O CENÁRIO II: ORDENAÇÃO
-    return dadosProcessados.sort((a, b) => {
+    return dados.sort((a, b) => {
       const precoA = typeof a.preco === "string" ? parseFloat(a.preco) : a.preco;
       const precoB = typeof b.preco === "string" ? parseFloat(b.preco) : b.preco;
-
       if (currentSort === "preco-crescente") return precoA - precoB;
       if (currentSort === "preco-decrescente") return precoB - precoA;
-      if (currentSort === "relevancia") return b.avaliacao - a.avaliacao;
-      return 0;
+      return b.avaliacao - a.avaliacao;
     });
+  }, [currentCategoria, currentSort, termoBusca, etapaExperimento]);
 
-  }, [currentCategoria, currentSort, termoBusca, estruturaDeDadosAtiva]);
-
-  // Gatilho do Cenário i (Busca vinda do Header)
+  // Captura e gerencia a submissão dos termos pareados
   const handleSearchSubmit = (termo: string) => {
-    setTermoBusca(termo);
-    setPerguntaPopup("Como avalia a fluidez e a rapidez da resposta da interface ao realizar esta busca?");
-    setCenarioAtivo("busca");
+    const termoTratado = termo.toLowerCase().trim();
 
-    setTimeout(() => {
-      setIsPopupOpen(true);
-    }, 500);
+    if (etapaExperimento === "TERMO_1" && termoTratado === "fone") {
+      setTermoBusca(termo);
+      setEtapaExperimento("TERMO_2"); // Avança para a próxima etapa estrutural
+    } else if (etapaExperimento === "TERMO_2" && termoTratado === "mochila") {
+      setTermoBusca(termo);
+      setEtapaExperimento("AVALIACAO_PRONTA");
+      
+      // Dispara o pop-up comparativo após o render da segunda busca
+      setTimeout(() => {
+        setIsPopupOpen(true);
+      }, 600);
+    } else {
+      // Alerta amigável para guiar o usuário na ordem correta do teste científico
+      alert(
+        etapaExperimento === "TERMO_1" 
+          ? "Por favor, siga a instrução no topo e busque por: fone" 
+          : "Ótimo! Agora digite o segundo termo pedido no topo: mochila"
+      );
+    }
   };
 
-  // Gatilho do Cenário iii (Filtragem)
-  const handleCategoryChange = (categoryId: string) => {
-    setCurrentCategoria(categoryId);
-    setPerguntaPopup("Como você avalia a fluidez e a velocidade da interface ao filtrar por essa categoria?");
-    setCenarioAtivo("filtragem");
-
-    setTimeout(() => {
-      setIsPopupOpen(true);
-    }, 500);
-  };
-
-  // Gatilho do Cenário ii (Ordenação)
-  const handleSortChange = (sortOption: string) => {
-    setCurrentSort(sortOption);
-    setPerguntaPopup("Como você avalia a responsividade da interface após acionar a ordenação dos produtos?");
-    setCenarioAtivo("ordenacao");
-    
-    setTimeout(() => {
-      setIsPopupOpen(true);
-    }, 500);
-  };
-
-  // Salvando na Telemetria
-  const handleSalvarTelemetria = (nota: number) => {
-    const dadosEvento = {
-      cenario: cenarioAtivo,
-      notaLikert: nota,
-      estruturaUtilizada: BlackBoxDetectada(), // Identifica o par correto para o Teste t
+  const handleSalvarTelemetria = (notaComparativa: number) => {
+    const payloadCientifico = {
+      tipoExperimento: "PAREADO_WITHIN_SUBJECT",
+      termo1_estrutura: "BUSCA_SEQUENCIAL_ARRAY_ON",
+      termo2_estrutura: "BUSCA_HASH_TABLE_O1",
+      respostaMétricaLikert: notaComparativa, 
       timestamp: new Date().toISOString(),
     };
 
-    console.log(">>>> TELEMETRIA GRAVADA:", dadosEvento);
-    setCenarioAtivo(null);
-  };
-
-  // Função auxiliar para mapear o nome exato da técnica avaliada no log
-  const BlackBoxDetectada = () => {
-    if (cenarioAtivo === "busca") {
-      return estruturaDeDadosAtiva === "ARRAY_ESTRUTURA" ? "BUSCA_SEQUENCIAL_ARRAY" : "BUSCA_HASH_TABLE";
-    }
-    return estruturaDeDadosAtiva;
+    console.log("%c>>>> DADOS FINAIS GRAVADOS COM SUCESSO PARA O TESTE T PAREADO:", "color: #3b82f6; font-weight: bold", payloadCientifico);
+    
+    // Reseta o fluxo caso queira testar novamente
+    setIsPopupOpen(false);
+    setTermoBusca("");
+    setEtapaExperimento("TERMO_1");
   };
 
   return (
     <div className="flex flex-col min-h-screen bg-gray-50">
-      {/* Conectamos o evento de busca no Header */}
-      <Header onSearch={handleSearchSubmit} />
+      
+      {/* BARRA DE ORIENTAÇÃO DO USUÁRIO (GUIA DO TESTE) */}
+      <div className="w-full bg-blue-600 text-white text-center py-2 px-4 text-sm font-medium shadow-inner flex items-center justify-center gap-2">
+        {etapaExperimento === "TERMO_1" && (
+          <span>🔬 <strong>Passo 1 de 2:</strong> Digite <span className="bg-white text-blue-700 px-1.5 py-0.5 rounded font-bold mx-1">fone</span> na barra de pesquisa e clique na lupa.</span>
+        )}
+        {etapaExperimento === "TERMO_2" && (
+          <span>🔬 <strong>Passo 2 de 2:</strong> Excelente! Agora apague o texto, digite <span className="bg-white text-blue-700 px-1.5 py-0.5 rounded font-bold mx-1">mochila</span> e busque novamente.</span>
+        )}
+        {etapaExperimento === "AVALIACAO_PRONTA" && (
+          <span>🎉 Obrigado! Por favor, responda ao questionário na tela para concluir.</span>
+        )}
+      </div>
+
+      <HeaderComponent onSearch={handleSearchSubmit} />
 
       <main className="flex-1 max-w-7xl w-full mx-auto px-4 py-6">  
         <div className="flex flex-col md:flex-row gap-6">
-          
           <aside className="w-full md:w-64 shrink-0">              
-            <FilterSideBar 
-              selectedCategoria={currentCategoria} 
-              onSelectCategoria={handleCategoryChange} 
-            />
+            <FilterSideBar selectedCategoria={currentCategoria} onSelectCategoria={setCurrentCategoria} />
           </aside>
 
           <section className="flex-1">
             <div className="bg-white p-4 rounded-lg border border-gray-200 shadow-sm mb-4">
-              <SortBar
-                currentSort={currentSort} 
-                onSortChange={handleSortChange} 
-                totalProdutos={produtosExibidos.length}
-              />
+              <SortBar currentSort={currentSort} onSortChange={setCurrentSort} totalProdutos={produtosExibidos.length} />
             </div>
 
             <div className="bg-white p-4 rounded-lg border border-gray-200 shadow-sm">
@@ -150,9 +131,7 @@ export default function Home() {
                   ))}
                 </div>
               ) : (
-                <div className="py-12 text-center text-gray-400 text-sm">
-                  Nenhum produto encontrado para a busca "{termoBusca}".
-                </div>
+                <div className="py-12 text-center text-gray-400 text-sm">Nenhum produto listado.</div>
               )}
             </div>
           </section>
@@ -161,12 +140,7 @@ export default function Home() {
 
       <Footer />
 
-      <LikertPopup 
-        isOpen={isPopupOpen}
-        onClose={() => setIsPopupOpen(false)}
-        pergunta={perguntaPopup}
-        onEnviarResposta={handleSalvarTelemetria}
-      />
+      <LikertPopup isOpen={isPopupOpen} onEnviarResposta={handleSalvarTelemetria} />
     </div>
   );
 }
