@@ -1,28 +1,54 @@
+// src/utils/algoritmosBusca.ts
 import { Products } from "../data/products";
 
 // ESTRUTURA 1: Busca Sequencial em Array - O(n)
 export function buscarNoArray(produtos: Products[], termo: string): Products[] {
-  console.log("%c[Estrutura 1] Executando Busca Sequencial no Array...", "color: #ef4444");
+  const t0 = performance.now();
+  
   const termoMinusculo = termo.toLowerCase().trim();
-  return produtos.filter(produto => produto.nome.toLowerCase().includes(termoMinusculo));
+  const resultado = produtos.filter(produto => produto.nome.toLowerCase().includes(termoMinusculo));
+  
+  const t1 = performance.now();
+  console.log(`%c[Array O(n)] Varredura linear levou ${(t1 - t0).toFixed(2)} ms para 100k itens.`, "color: #ef4444; font-weight: bold;");
+  return resultado;
 }
 
-// ESTRUTURA 2: Busca por Hash Table - O(1)
-export function buscarNaHashTable(produtos: Products[], termo: string): Products[] {
-  console.log("%c[Estrutura 2] Executando Busca Otimizada em Tabela Hash...", "color: #22c55e");
-  const termoMinusculo = termo.toLowerCase().trim();
-  
+// Singleton na memória heap para construir a Hash Table apenas uma vez na inicialização do cliente
+let cacheHashTable: Record<string, Products[]> | null = null;
+
+function construirHashTableSingleton(produtos: Products[]): Record<string, Products[]> {
+  if (cacheHashTable) return cacheHashTable;
+
+  console.log("[Científico] Indexando 100.000 itens na Tabela Hash em background...");
   const hashTable: Record<string, Products[]> = {};
+  
   produtos.forEach(produto => {
     const palavras = produto.nome.toLowerCase().split(" ");
     palavras.forEach(palavra => {
       const chave = palavra.replace(/[.,\/#!$%\^&\*;:{}=\-_`~()]/g,"");
       if (chave.length > 2) {
         if (!hashTable[chave]) hashTable[chave] = [];
-        if (!hashTable[chave].some(p => p.id === produto.id)) hashTable[chave].push(produto);
+        hashTable[chave].push(produto);
       }
     });
   });
 
-  return hashTable[termoMinusculo] || [];
+  cacheHashTable = hashTable;
+  return cacheHashTable;
+}
+
+// ESTRUTURA 2: Busca por Hash Table - O(1) de recuperação
+export function buscarNaHashTable(produtos: Products[], termo: string): Products[] {
+  // Garante a tabela indexada na memória
+  const tabela = construirHashTableSingleton(produtos);
+  
+  const t0 = performance.now();
+  
+  const termoMinusculo = termo.toLowerCase().trim();
+  // Busca direta por chave (Complexidade Constante)
+  const resultado = tabela[termoMinusculo] || [];
+  
+  const t1 = performance.now();
+  console.log(`%c[Hash Table O(1)] Acesso direto à chave levou ${(t1 - t0).toFixed(2)} ms.`, "color: #22c55e; font-weight: bold;");
+  return resultado;
 }

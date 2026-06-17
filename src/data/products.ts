@@ -1,26 +1,44 @@
+// src/data/products.ts
+
 export interface Products {
   id: number;
   nome: string;
   preco: number | string;
   categoria: string;
   avaliacao: number;
-  votos: number;
 }
 
-export const ProdutosMocks: Products[] = [
-  { id: 1, nome: "Smartphone Galaxy Alpha 5G", categoria: "eletronicos", preco: 2499.00, avaliacao: 4.8, votos: 124 },
-  { id: 2, nome: "Smartwatch Sport Band v4", categoria: "eletronicos", preco: 399.90, avaliacao: 4.5, votos: 88 },
-  { id: 3, nome: "Fone de Ouvido Bluetooth Noise Cancelling", categoria: "eletronicos", preco: 899.00, avaliacao: 4.7, votos: 56 },
+// Substantivos e adjetivos para gerar nomes variados
+const substantivos = ["Smartphone", "Smartwatch", "Fone de Ouvido", "Mochila", "Camiseta", "Tênis", "Luminária", "Jogo de Panelas", "Bola de Futebol", "Teclado", "Mouse", "Monitor"];
+const adjetivos = ["Premium", "Ultra Light", "Pro", "Sport", "Touch", "Wireless", "Impermeável", "Titanium", "Advanced", "Elite", "Ergonômico", "Bluetooth"];
+const marcas = ["Alpha", "Beta", "Galaxy", "Delta", "Nexus", "Titan", "Quantum", "Volt"];
+const categorias = ["eletronicos", "esportes", "casa", "vestuario"];
+
+function gerarProdutosEmMassa(quantidade: number): Products[] {
+  const lista: Products[] = [];
   
-  { id: 4, nome: "Bola de Futebol Profissional Pro", categoria: "esportes", preco: 149.90, avaliacao: 4.3, votos: 210 },
-  { id: 5, nome: "Tênis de Corrida Ultra Light", categoria: "esportes", preco: 450.00, avaliacao: 4.6, votos: 95 },
-  { id: 6, nome: "Mochila Impermeável Ergonômica", categoria: "esportes", preco: 289.90, avaliacao: 4.4, votos: 42 },
+  for (let i = 1; i <= quantidade; i++) {
+    const sub = substantivos[i % substantivos.length];
+    const adj = adjetivos[i % adjetivos.length];
+    const marca = marcas[i % marcas.length];
+    const cat = categorias[i % categorias.length];
+    
+    // Fórmulas matemáticas fixas para que o servidor e o cliente gerem os mesmos valores
+    const precoCalculado = parseFloat(((i * 17) % 1980 + 20).toFixed(2));
+    const avaliacaoCalculada = parseFloat((4.0 + ((i * 3) % 11) * 0.1).toFixed(1));
+
+    lista.push({
+      id: i,
+      nome: `${sub} ${marca} ${adj} Mod. ${i}`,
+      preco: precoCalculado,
+      categoria: cat,
+      avaliacao: avaliacaoCalculada
+    });
+  }
   
-  { id: 7, nome: "Luminária de Mesa LED Touch", categoria: "casa", preco: 119.90, avaliacao: 4.2, votos: 130 },
-  { id: 8, nome: "Jogo de Panelas Antiaderente (5pçs)", categoria: "casa", preco: 349.00, avaliacao: 4.7, votos: 74 },
-  { id: 9, nome: "Almofada Ortopédica Premium", categoria: "casa", preco: 89.90, avaliacao: 4.1, votos: 19 },
-  
-  { id: 10, nome: "Camiseta Dry Fit Academia", categoria: "vestuario", preco: 59.90, avaliacao: 4.5, votos: 340 },
-  { id: 11, nome: "Jaqueta Corta Vento Streetwear", categoria: "vestuario", preco: 199.00, avaliacao: 4.3, votos: 62 },
-  { id: 12, nome: "Kit 3 Meias Esportivas Algodão", categoria: "vestuario", preco: 39.90, avaliacao: 4.8, votos: 512 },
-];
+  return lista;
+}
+
+// ALTERE O NÚMERO AQUI PARA INTENSIFICAR O ESTRESSE (Ex: 50000 ou 100000)
+export const ProdutosMocks: Products[] = gerarProdutosEmMassa(100000);
+console.log(`[Científico] Base de dados massiva inicializada com ${ProdutosMocks.length} produtos.`);

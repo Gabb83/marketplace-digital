@@ -2,10 +2,9 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import Header from "@/src/components/FilterSideBar"; // Supondo o caminho correto
 import FilterSideBar from "@/src/components/FilterSideBar";
 import Footer from "@/src/components/Footer";
-import HeaderComponent from "@/src/components/Header"; // Renomeado para evitar conflito
+import HeaderComponent from "@/src/components/Header"; 
 import ProductCard from "@/src/components/ProductCard";
 import SortBar from "@/src/components/SortBar";
 import LikertPopup from "@/src/components/LikertPopup";
@@ -19,7 +18,6 @@ export default function Home() {
   const [termoBusca, setTermoBusca] = useState("");
 
   // ESTADOS DO EXPERIMENTO PAREADO
-  // Etapas: "TERMO_1" (Fase inicial), "TERMO_2" (Fase intermediária), "AVALIACAO_PRONTA" (Fim do teste)
   const [etapaExperimento, setEtapaExperimento] = useState<"TERMO_1" | "TERMO_2" | "AVALIACAO_PRONTA">("TERMO_1");
   const [isPopupOpen, setIsPopupOpen] = useState(false);
 
@@ -56,23 +54,26 @@ export default function Home() {
   const handleSearchSubmit = (termo: string) => {
     const termoTratado = termo.toLowerCase().trim();
 
-    if (etapaExperimento === "TERMO_1" && termoTratado === "fone") {
-      setTermoBusca(termo);
-      setEtapaExperimento("TERMO_2"); // Avança para a próxima etapa estrutural
-    } else if (etapaExperimento === "TERMO_2" && termoTratado === "mochila") {
-      setTermoBusca(termo);
+    // FASE 1: O utilizador introduz qualquer texto que contenha o número 99999
+    if (etapaExperimento === "TERMO_1" && termoTratado.includes("99999")) {
+      setTermoBusca(termoTratado); // Passa o termo limpo para o algoritmo
+      setEtapaExperimento("TERMO_2"); 
+    } 
+    // FASE 2: O utilizador introduz qualquer texto que contenha o número 100000
+    else if (etapaExperimento === "TERMO_2" && termoTratado.includes("100000")) {
+      setTermoBusca(termoTratado);
       setEtapaExperimento("AVALIACAO_PRONTA");
       
-      // Dispara o pop-up comparativo após o render da segunda busca
+      // Janela de observação de 3 segundos para notar a velocidade da Hash Table
       setTimeout(() => {
         setIsPopupOpen(true);
-      }, 600);
+      }, 3000); 
     } else {
-      // Alerta amigável para guiar o usuário na ordem correta do teste científico
+      // Alerta dinâmico simplificado para guiar o utilizador sem margem de erro
       alert(
         etapaExperimento === "TERMO_1" 
-          ? "Por favor, siga a instrução no topo e busque por: fone" 
-          : "Ótimo! Agora digite o segundo termo pedido no topo: mochila"
+          ? "Por favor, introduza o número do primeiro modelo: 99999" 
+          : "Boa! Agora limpe o campo e introduza o número do segundo modelo: 100000"
       );
     }
   };
@@ -97,16 +98,16 @@ export default function Home() {
   return (
     <div className="flex flex-col min-h-screen bg-gray-50">
       
-      {/* BARRA DE ORIENTAÇÃO DO USUÁRIO (GUIA DO TESTE) */}
+      {/* BARRA DE ORIENTAÇÃO DO USUÁRIO REFINADA COM TEXTO + NÚMERO */}
       <div className="w-full bg-blue-600 text-white text-center py-2 px-4 text-sm font-medium shadow-inner flex items-center justify-center gap-2">
         {etapaExperimento === "TERMO_1" && (
-          <span>🔬 <strong>Passo 1 de 2:</strong> Digite <span className="bg-white text-blue-700 px-1.5 py-0.5 rounded font-bold mx-1">fone</span> na barra de pesquisa e clique na lupa.</span>
+          <span>🔬 <strong>Passo 1 de 2 (Varredura Linear):</strong> Procure pelo código <span className="bg-white text-blue-700 px-1.5 py-0.5 rounded font-bold mx-1">99999</span> na barra de busca e clique na lupa.</span>
         )}
         {etapaExperimento === "TERMO_2" && (
-          <span>🔬 <strong>Passo 2 de 2:</strong> Excelente! Agora apague o texto, digite <span className="bg-white text-blue-700 px-1.5 py-0.5 rounded font-bold mx-1">mochila</span> e busque novamente.</span>
+          <span>🔬 <strong>Passo 2 de 2 (Acesso por Chave):</strong> Excelente! Agora limpe o campo, busque por <span className="bg-white text-blue-700 px-1.5 py-0.5 rounded font-bold mx-1">100000</span> e compare a resposta.</span>
         )}
         {etapaExperimento === "AVALIACAO_PRONTA" && (
-          <span>🎉 Obrigado! Por favor, responda ao questionário na tela para concluir.</span>
+          <span>🎉 Análise concluída! Responda à escala comparativa exibida na tela.</span>
         )}
       </div>
 
@@ -126,12 +127,12 @@ export default function Home() {
             <div className="bg-white p-4 rounded-lg border border-gray-200 shadow-sm">
               {produtosExibidos.length > 0 ? (
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {produtosExibidos.map((produto) => (
+                  {produtosExibidos.slice(0, 24).map((produto) => (
                     <ProductCard key={produto.id} produto={produto} />
                   ))}
                 </div>
               ) : (
-                <div className="py-12 text-center text-gray-400 text-sm">Nenhum produto listado.</div>
+                <div className="py-12 text-center text-gray-400 text-sm">Nenhum produto listado para a busca atual.</div>
               )}
             </div>
           </section>
