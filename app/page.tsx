@@ -25,16 +25,31 @@ export default function Home() {
   const [etapaExperimento, setEtapaExperimento] = useState<EtapaFluxo>("BUSCA_ARRAY");
   const [isPopupOpen, setIsPopupOpen] = useState(false);
 
-  // Estados de telemetria locais síncronos e protegidos
-  const [temposBusca, setTemposBusca] = useState({ arrayMs: null as number | null, hashMs: null as number | null });
-  const [temposOrdem, setTemposOrdem] = useState({ nativaMs: null as number | null, abbMs: null as number | null });
+  // ID único de sessão persistente e detecção de dispositivo para o rigor científico do paper
+  const [idSessao] = useState(() => Math.random().toString(36).substring(2, 6).toUpperCase());
+  const checkDispositivo = () => {
+    if (typeof window !== "undefined") {
+      return window.innerWidth < 768 ? "MOBILE" : "DESKTOP";
+    }
+    return "UNKNOWN";
+  };
 
-  // Define dinamicamente a pergunta do pop-up baseado na etapa atual do experimento
+  // Estados temporários de telemetria locais
+  const [temposBusca, setTemposBusca] = useState({ arrayMs: 0, hashMs: 0 });
+  const [temposOrdem, setTemposOrdem] = useState({ nativaMs: 0, abbMs: 0 });
+
+  // Estado que acumula a primeira etapa para unificar o registro no Forms
+  const [dadosBuscaAcumulados, setDadosBuscaAcumulados] = useState({
+    arrayMs: "0",
+    hashMs: "0",
+    likert: 0
+  });
+
   const perguntaPopupAtual = etapaExperimento === "AVALIACAO_BUSCA"
     ? "Comparando a primeira busca (Varredura Linear em Array) com a segunda busca (Acesso Direto via Hash Table), qual você percebeu ser mais rápida e fluida?"
     : "Comparando o primeiro cenário de ordenação (Algoritmo Nativo Timsort) com o segundo cenário (Árvore Binária de Busca Manual), qual você percebeu ser mais rápido e fluido?";
 
-  // 1. FILTRAGEM E RENDEREZAÇÃO DA VITRINE (Visão de Negócio da Interface)
+  // FILTRAGEM E RENDEREZAÇÃO DA VITRINE
   const produtosExibidos = useMemo(() => {
     let dados = [...ProdutosMocks];
 
@@ -71,29 +86,30 @@ export default function Home() {
     return dados;
   }, [currentCategoria, currentSort, termoBusca, etapaExperimento]);
 
-    // 1. No escopo do seu componente Home, gere um ID de sessão simples uma única vez:
-  const [idSessao] = useState(() => Math.random().toString(36).substring(2, 6).toUpperCase());
-
-  // 2. Crie uma função simples para detectar se é mobile ou desktop:
-  const checkDispositivo = () => {
-    if (typeof window !== "undefined") {
-      return window.innerWidth < 768 ? "MOBILE" : "DESKTOP";
-    }
-    return "UNKNOWN";
-  };
-
-  // FUNÇÃO AUXILIAR: Envia os dados silenciosamente para a planilha do Google Forms
-  const salvarNoGoogleForms = async (dados: { tipo: string; tempo1: number; tempo2: number; nota: number }) => {
+  // FUNÇÃO DE ENVIO UNIFICADA: Dispara o payload completo em uma única linha da planilha
+  const enviarParaGoogleFormsUnificado = async (payload: {
+    idUsuario: string;
+    dispositivo: string;
+    bArray: string;
+    bHash: string;
+    bLikert: string;
+    oNativo: string;
+    oAbb: string;
+    oLikert: string;
+  }) => {
     const FORM_URL = "https://docs.google.com/forms/d/e/1FAIpQLSfZVSsHBJcVM2xzvX1pC8xMKpeMAPEaMiZI3ZoLC7zwP_DeCQ/formResponse";
 
-    // Cria uma string de metadados rica para os revisores do paper não botarem defeito
-  const tipoComMetadados = `${dados.tipo} | ID: ${idSessao} | DISP: ${checkDispositivo()}`;
-
-  const formData = new URLSearchParams();
-  formData.append("entry.603723243", tipoComMetadados); // Envia o tipo enriquecido
-  formData.append("entry.1707197018", dados.tempo1.toString());
-  formData.append("entry.1706201349", dados.tempo2.toString());
-  formData.append("entry.383115611", dados.nota.toString());
+    const formData = new URLSearchParams();
+    
+    // ATENÇÃO MÁXIMA AO MAPEAMENTO DOS ENTRYS:
+    formData.append("entry.432036167", payload.idUsuario);    // Tem que receber o ID (Ex: KZ7R)
+    formData.append("entry.314801769", payload.dispositivo);  // Tem que receber o DESKTOP/MOBILE
+    formData.append("entry.603723243", payload.bArray);       // Tempo da busca em array
+    formData.append("entry.750695508", payload.bHash);        // Tempo da busca em hash
+    formData.append("entry.62742821", payload.bLikert);       // Nota Likert da busca
+    formData.append("entry.1707197018", payload.oNativo);     // Tempo da ordenação nativa
+    formData.append("entry.1706201349", payload.oAbb);        // Tempo da ordenação ABB
+    formData.append("entry.383115611", payload.oLikert);       // Nota Likert da ordenação
 
     try {
       await fetch(FORM_URL, {
@@ -102,13 +118,12 @@ export default function Home() {
         headers: { "Content-Type": "application/x-www-form-urlencoded" },
         body: formData.toString(),
       });
-      console.log(`%c✓ [Google Forms] Dados enviados com sucesso para: ${dados.tipo}`, "color: #22c55e; font-weight: bold;");
+      console.log("%c✓ [Google Forms] Registro unificado enviado corretamente!", "color: #a855f7; font-weight: bold;");
     } catch (error) {
-      console.error("Falha ao salvar dados no Google Forms:", error);
+      console.error("Falha ao submeter registro unificado:", error);
     }
   };
 
-  // GATILHO SÍNCRONO DE BUSCA: Mede os algoritmos puros no momento exato do clique
   const handleSearchSubmit = (termo: string) => {
     const termoTratado = termo.toLowerCase().trim();
     let dadosBase = [...ProdutosMocks];
@@ -139,7 +154,6 @@ export default function Home() {
     }
   };
 
-  // GATILHO SÍNCRONO DE ORDENAÇÃO: Garante o estresse em cima da massa total de dados de forma síncrona
   const handleSortChange = (sortOption: string) => {
     setCurrentSort(sortOption);
     const criterio = sortOption === "preco-crescente" ? "crescente" : "decrescente";
@@ -172,17 +186,13 @@ export default function Home() {
     }
   };
 
-  // CONTROLADOR CENTRAL DO QUESTIONÁRIO LIKERT
   const handleSalvarTelemetriaDaEtapa = async (notaComparativa: number) => {
     if (etapaExperimento === "AVALIACAO_BUSCA") {
-      const tArray = parseFloat(temposBusca.arrayMs?.toFixed(4) || "0");
-      const tHash = parseFloat(temposBusca.hashMs?.toFixed(4) || "0");
-
-      await salvarNoGoogleForms({
-        tipo: "PAREADO_DADOS_BUSCA",
-        tempo1: tArray,
-        tempo2: tHash,
-        nota: notaComparativa
+      // Guarda os dados da busca no estado local e avança sem disparar requisição externa
+      setDadosBuscaAcumulados({
+        arrayMs: temposBusca.arrayMs.toFixed(4),
+        hashMs: temposBusca.hashMs.toFixed(4),
+        likert: notaComparativa
       });
 
       setIsPopupOpen(false);
@@ -190,14 +200,19 @@ export default function Home() {
       setEtapaExperimento("ORDEM_NATIVA");
     } 
     else if (etapaExperimento === "AVALIACAO_ORDENACAO") {
-      const tNativo = parseFloat(temposOrdem.nativaMs?.toFixed(4) || "0");
-      const tAbb = parseFloat(temposOrdem.abbMs?.toFixed(4) || "0");
+      const tNativo = temposOrdem.nativaMs.toFixed(4);
+      const tAbb = temposOrdem.abbMs.toFixed(4);
 
-      await salvarNoGoogleForms({
-        tipo: "PAREADO_DADOS_ORDENACAO",
-        tempo1: tNativo,
-        tempo2: tAbb,
-        nota: notaComparativa
+      // Envia de uma vez só todo o fluxo acumulado do usuário atual
+      await enviarParaGoogleFormsUnificado({
+        idUsuario: idSessao,
+        dispositivo: checkDispositivo(),
+        bArray: dadosBuscaAcumulados.arrayMs,
+        bHash: dadosBuscaAcumulados.hashMs,
+        bLikert: dadosBuscaAcumulados.likert.toString(),
+        oNativo: tNativo,
+        oAbb: tAbb,
+        oLikert: notaComparativa.toString()
       });
 
       setIsPopupOpen(false);
@@ -207,16 +222,14 @@ export default function Home() {
 
   return (
     <div className="flex flex-col min-h-screen bg-gray-50">
-      
-      {/* BARRA SUPERIOR DE CONDUÇÃO DO EXPERIMENTO */}
-      <div className="w-full bg-blue-600 text-white text-center py-2 px-4 text-sm font-medium shadow-inner flex items-center justify-center gap-2">
-        {etapaExperimento === "BUSCA_ARRAY" && <span>🔬 <strong>Etapa 1: Busca (Cenário A)</strong> | Procure pelo código <span className="bg-white text-blue-700 px-1.5 py-0.5 rounded font-bold mx-1">99999</span> na barra de pesquisa.</span>}
-        {etapaExperimento === "BUSCA_HASH" && <span>🔬 <strong>Etapa 1: Busca (Cenário B)</strong> | Agora limpe a barra, busque por <span className="bg-white text-blue-700 px-1.5 py-0.5 rounded font-bold mx-1">100000</span> e compare.</span>}
-        {etapaExperimento === "AVALIACAO_BUSCA" && <span>🎉 Respondendo questionário de Busca...</span>}
-        {etapaExperimento === "ORDEM_NATIVA" && <span>🔬 <strong>Etapa 2: Ordenação (Cenário A)</strong> | Escolha uma ordenação no menu (ex: <i>Menor Preço</i>) para rodar o método 1.</span>}
-        {etapaExperimento === "ORDEM_ABB" && <span>🔬 <strong>Etapa 2: Ordenação (Cenário B)</strong> | Ótimo. Mude a ordenação para <strong>qualquer outra opção</strong> para rodar o método 2.</span>}
-        {etapaExperimento === "AVALIACAO_ORDENACAO" && <span>🎉 Respondendo questionário de Ordenação...</span>}
-        {etapaExperimento === "FIM_EXPERIMENTO" && <span>🏆 Experimento concluído com sucesso! Muito obrigado pela contribuição científica.</span>}
+      <div className="w-full bg-purple-600 text-white text-center py-2 px-4 text-sm font-medium shadow-inner flex items-center justify-center gap-2">
+        {etapaExperimento === "BUSCA_ARRAY" && <span>🔬 <strong>Etapa 1/2: Busca (Cenário A)</strong> | Procure pelo código <span className="bg-white text-purple-700 px-1.5 py-0.5 rounded font-bold mx-1">99999</span> na barra de pesquisa.</span>}
+        {etapaExperimento === "BUSCA_HASH" && <span>🔬 <strong>Etapa 1/2: Busca (Cenário B)</strong> | Agora limpe a barra, busque por <span className="bg-white text-purple-700 px-1.5 py-0.5 rounded font-bold mx-1">100000</span> e compare.</span>}
+        {etapaExperimento === "AVALIACAO_BUSCA" && <span>🎉 Salvando dados parciais de busca...</span>}
+        {etapaExperimento === "ORDEM_NATIVA" && <span>🔬 <strong>Etapa 2/2: Ordenação (Cenário A)</strong> | Escolha uma ordenação no menu (ex: <i>Menor Preço</i>) para rodar o método 1.</span>}
+        {etapaExperimento === "ORDEM_ABB" && <span>🔬 <strong>Etapa 2/2: Ordenação (Cenário B)</strong> | Mude a ordenação para <strong>qualquer outra opção</strong> para rodar o método 2 e concluir.</span>}
+        {etapaExperimento === "AVALIACAO_ORDENACAO" && <span>🎉 Enviando relatório consolidado ao banco...</span>}
+        {etapaExperimento === "FIM_EXPERIMENTO" && <span>🏆 Experimento concluído! Sua participação foi unificada com sucesso na base de dados. Obrigado!</span>}
       </div>
 
       <HeaderComponent onSearch={handleSearchSubmit} />
@@ -249,7 +262,6 @@ export default function Home() {
 
       <Footer />
 
-      {/* Pop-up alimentado dinamicamente com as perguntas customizadas de IHC */}
       <LikertPopup 
         isOpen={isPopupOpen} 
         onEnviarResposta={handleSalvarTelemetriaDaEtapa} 
