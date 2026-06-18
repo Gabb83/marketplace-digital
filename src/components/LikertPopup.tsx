@@ -1,24 +1,30 @@
 // src/components/LikertPopup.tsx
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 interface LikertPopupProps {
   isOpen: boolean;
   onEnviarResposta: (nota: number) => void;
+  tituloContexto: string; // Nova prop para o texto dinâmico
 }
 
-export default function LikertPopup({ isOpen, onEnviarResposta }: LikertPopupProps) {
+export default function LikertPopup({ isOpen, onEnviarResposta, tituloContexto }: LikertPopupProps) {
   const [notaSelecionada, setNotaSelecionada] = useState<number | null>(null);
+
+  // Reseta a nota selecionada toda vez que o modal abrir para um novo cenário
+  useEffect(() => {
+    if (isOpen) setNotaSelecionada(null);
+  }, [isOpen]);
 
   if (!isOpen) return null;
 
   const opcoesLikert = [
-    { valor: 1, rotulo: "A primeira foi MUITO melhor" },
-    { valor: 2, rotulo: "A primeira foi um pouco melhor" },
+    { valor: 1, rotulo: "A primeira operação foi MUITO melhor/mais rápida" },
+    { valor: 2, rotulo: "A primeira operação foi um pouco melhor" },
     { valor: 3, rotulo: "Não notei diferença entre as duas" },
-    { valor: 4, rotulo: "A segunda foi um pouco melhor" },
-    { valor: 5, rotulo: "A segunda foi MUITO melhor" },
+    { valor: 4, rotulo: "A segunda operação foi um pouco melhor" },
+    { valor: 5, rotulo: "A segunda operação foi MUITO melhor/mais rápida" },
   ];
 
   return (
@@ -30,11 +36,10 @@ export default function LikertPopup({ isOpen, onEnviarResposta }: LikertPopupPro
             Análise Comparativa de Desempenho
           </span>
           <h3 className="text-lg font-bold text-gray-900 leading-snug">
-            Comparando a primeira busca ("Fone") com a segunda busca ("Mochila"), qual você percebeu ser mais rápida e fluida?
+            {tituloContexto} {/* Injeta o título dinamicamente aqui */}
           </h3>
         </div>
 
-        {/* Escala de Opções de Comparação */}
         <div className="flex flex-col gap-3 mb-6">
           {opcoesLikert.map((opcao) => (
             <button
