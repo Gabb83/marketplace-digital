@@ -6,6 +6,7 @@ export interface Products {
   preco: number | string;
   categoria: string;
   avaliacao: number;
+  votos: number;
 }
 
 // Substantivos e adjetivos para gerar nomes variados
@@ -26,13 +27,17 @@ function gerarProdutosEmMassa(quantidade: number): Products[] {
     // Fórmulas matemáticas fixas para que o servidor e o cliente gerem os mesmos valores
     const precoCalculado = parseFloat(((i * 17) % 1980 + 20).toFixed(2));
     const avaliacaoCalculada = parseFloat((4.0 + ((i * 3) % 11) * 0.1).toFixed(1));
+    
+    // Fórmula determinística para gerar número de votos dinâmicos entre 5 e 1500
+    const votosCalculados = ((i * 23) % 1495) + 5;
 
     lista.push({
       id: i,
       nome: `${sub} ${marca} ${adj} Mod. ${i}`,
       preco: precoCalculado,
       categoria: cat,
-      avaliacao: avaliacaoCalculada
+      avaliacao: avaliacaoCalculada,
+      votos: votosCalculados,
     });
   }
   
