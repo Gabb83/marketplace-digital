@@ -26,7 +26,8 @@ function gerarProdutosEmMassa(quantidade: number): Products[] {
     
     // Fórmulas matemáticas fixas para que o servidor e o cliente gerem os mesmos valores
     const precoCalculado = parseFloat(((i * 17) % 1980 + 20).toFixed(2));
-    const avaliacaoCalculada = parseFloat((4.0 + ((i * 3) % 11) * 0.1).toFixed(1));
+    // Nova fórmula determinística variando de 1.2 a 5.0 estrelas
+    const avaliacaoCalculada = parseFloat((1.0 + ((i * 7) % 41) * 0.1).toFixed(1));
     
     // Fórmula determinística para gerar número de votos dinâmicos entre 5 e 1500
     const votosCalculados = ((i * 23) % 1495) + 5;
