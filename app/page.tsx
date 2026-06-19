@@ -25,6 +25,8 @@ export default function Home() {
   const [etapaExperimento, setEtapaExperimento] = useState<EtapaFluxo>("BUSCA_ARRAY");
   const [isPopupOpen, setIsPopupOpen] = useState(false);
 
+  const [isLoading, setIsLoading] = useState<boolean>(false);
+
   // ID único de sessão persistente e detecção de dispositivo para o rigor científico do paper
   const [idSessao] = useState(() => Math.random().toString(36).substring(2, 6).toUpperCase());
   const checkDispositivo = () => {
@@ -125,10 +127,13 @@ export default function Home() {
   };
 
   const handleSearchSubmit = (termo: string) => {
-    const termoTratado = termo.toLowerCase().trim();
-    let dadosBase = [...ProdutosMocks];
+  const termoTratado = termo.toLowerCase().trim();
+  let dadosBase = [...ProdutosMocks];
 
-    if (etapaExperimento === "BUSCA_ARRAY" && termoTratado.includes("99999")) {
+  if (etapaExperimento === "BUSCA_ARRAY" && termoTratado.includes("99999")) {
+    setIsLoading(true); // Liga o spinner
+
+    setTimeout(() => {
       const t0 = performance.now();
       buscarNoArray(dadosBase, termoTratado);
       const t1 = performance.now();
@@ -136,8 +141,13 @@ export default function Home() {
       setTemposBusca(prev => ({ ...prev, arrayMs: t1 - t0 }));
       setTermoBusca(termoTratado);
       setEtapaExperimento("BUSCA_HASH");
-    } 
-    else if (etapaExperimento === "BUSCA_HASH" && termoTratado.includes("100000")) {
+      setIsLoading(false); // Desliga o spinner
+    }, 50); // 50ms é o suficiente para o React renderizar o spinner na tela
+  } 
+  else if (etapaExperimento === "BUSCA_HASH" && termoTratado.includes("100000")) {
+    setIsLoading(true);
+
+    setTimeout(() => {
       const t0 = performance.now();
       buscarNaHashTable(dadosBase, termoTratado);
       const t1 = performance.now();
@@ -145,21 +155,26 @@ export default function Home() {
       setTemposBusca(prev => ({ ...prev, hashMs: t1 - t0 }));
       setTermoBusca(termoTratado);
       setEtapaExperimento("AVALIACAO_BUSCA");
+      setIsLoading(false);
       
       setTimeout(() => { setIsPopupOpen(true); }, 1500);
-    } else if (etapaExperimento !== "BUSCA_ARRAY" && etapaExperimento !== "BUSCA_HASH") {
-      setTermoBusca(termoTratado);
-    } else {
-      alert(etapaExperimento === "BUSCA_ARRAY" ? "Por favor, busque pelo código: 99999" : "Por favor, busque pelo código: 100000");
-    }
-  };
+    }, 50);
+  } else if (etapaExperimento !== "BUSCA_ARRAY" && etapaExperimento !== "BUSCA_HASH") {
+    setTermoBusca(termoTratado);
+  } else {
+    alert(etapaExperimento === "BUSCA_ARRAY" ? "Por favor, busque pelo código: 99999" : "Por favor, busque pelo código: 100000");
+  }
+};
 
   const handleSortChange = (sortOption: string) => {
-    setCurrentSort(sortOption);
-    const criterio = sortOption === "preco-crescente" ? "crescente" : "decrescente";
-    let dadosBase = [...ProdutosMocks]; 
+  setCurrentSort(sortOption);
+  const criterio = sortOption === "preco-crescente" ? "crescente" : "decrescente";
+  let dadosBase = [...ProdutosMocks]; 
 
-    if (etapaExperimento === "ORDEM_NATIVA") {
+  if (etapaExperimento === "ORDEM_NATIVA") {
+    setIsLoading(true);
+
+    setTimeout(() => {
       const t0 = performance.now();
       dadosBase.sort((a, b) => {
         const precoA = typeof a.preco === "string" ? parseFloat(a.preco) : a.preco;
@@ -170,8 +185,13 @@ export default function Home() {
 
       setTemposOrdem(prev => ({ ...prev, nativaMs: t1 - t0 }));
       setEtapaExperimento("ORDEM_ABB");
-    } 
-    else if (etapaExperimento === "ORDEM_ABB") {
+      setIsLoading(false);
+    }, 50);
+  } 
+  else if (etapaExperimento === "ORDEM_ABB") {
+    setIsLoading(true);
+
+    setTimeout(() => {
       const t0 = performance.now();
       const dadosEmbaralhar = embaralharProdutosDeterministico(dadosBase);
       const abb = new ArvoreBinariaBusca(criterio);
@@ -181,10 +201,12 @@ export default function Home() {
 
       setTemposOrdem(prev => ({ ...prev, abbMs: t1 - t0 }));
       setEtapaExperimento("AVALIACAO_ORDENACAO");
+      setIsLoading(false);
       
       setTimeout(() => { setIsPopupOpen(true); }, 1500);
-    }
-  };
+    }, 50);
+  }
+};
 
   const handleSalvarTelemetriaDaEtapa = async (notaComparativa: number) => {
     if (etapaExperimento === "AVALIACAO_BUSCA") {
@@ -246,6 +268,13 @@ export default function Home() {
             </div>
 
             <div className="bg-white p-4 rounded-lg border border-gray-200 shadow-sm">
+              {isLoading ? (
+                <div className="absolute inset-0 bg-white/70 flex flex-col items-center justify-center z-10 backdrop-blur-sm">
+                  <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600"></div>
+                  <p className="text-sm text-gray-500 mt-3 font-medium">Processando estrutura de dados...</p>
+                </div>
+              ) : null}
+
               {produtosExibidos.length > 0 ? (
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                   {produtosExibidos.slice(0, 20).map((produto) => (
