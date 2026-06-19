@@ -7,7 +7,8 @@ import { ArvoreBinariaBusca, embaralharProdutosDeterministico } from "@/src/util
 
 export type EtapaFluxo = 
   | "BUSCA_ARRAY" | "BUSCA_HASH" | "AVALIACAO_BUSCA" 
-  | "ORDEM_NATIVA" | "ORDEM_ABB" | "AVALIACAO_ORDENACAO" 
+  | "ORDEM_NATIVA" | "ORDEM_ABB" | "AVALIACAO_ORDENACAO"
+  | "FILTRO_LINEAR" | "FILTRO_INDEXADO" | "AVALIACAO_FILTRAGEM"
   | "FIM_EXPERIMENTO";
 
 export function useExperimento() {
@@ -15,11 +16,17 @@ export function useExperimento() {
   const [isPopupOpen, setIsPopupOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [termoBusca, setTermoBusca] = useState("");
+  const [categoriaSelecionada, setCategoriaSelecionada] = useState("todos");
 
   const [idSessao] = useState(() => Math.random().toString(36).substring(2, 6).toUpperCase());
   const [temposBusca, setTemposBusca] = useState({ arrayMs: 0, hashMs: 0 });
   const [temposOrdem, setTemposOrdem] = useState({ nativaMs: 0, abbMs: 0 });
-  const [dadosBuscaAcumulados, setDadosBuscaAcumulados] = useState({ arrayMs: "0", hashMs: "0", likert: 0 });
+  const [temposFiltro, setTemposFiltro] = useState({ linearMs: 0, indexadoMs: 0 });
+  
+  const [dadosAcumulados, setDadosAcumulados] = useState({
+    bArrayMs: "0", bHashMs: "0", bLikert: 0,
+    oNativaMs: "0", oAbbMs: "0", oLikert: 0
+  });
 
   const checkDispositivo = () => {
     if (typeof window !== "undefined") {
@@ -28,9 +35,15 @@ export function useExperimento() {
     return "UNKNOWN";
   };
 
-  const perguntaPopupAtual = etapaExperimento === "AVALIACAO_BUSCA"
-    ? "Comparando a primeira busca (Varredura Linear em Array) com a segunda busca (Acesso Direto via Hash Table), qual você percebeu ser mais rápida e fluida?"
-    : "Comparando o primeiro cenário de ordenação (Algoritmo Nativo Timsort) com o segundo cenário (Árvore Binária de Busca Manual), qual você percebeu ser mais rápido e fluido?";
+  const perguntaPopupAtual = (() => {
+    if (etapaExperimento === "AVALIACAO_BUSCA") {
+      return "Comparando a primeira busca (Varredura Linear em Array) com a segunda busca (Acesso Direto via Hash Table), qual você percebeu ser mais rápida e fluida?";
+    }
+    if (etapaExperimento === "AVALIACAO_ORDENACAO") {
+      return "Comparando o primeiro cenário de ordenação (Algoritmo Nativo Timsort) com o segundo cenário (Árvore Binária de Busca Manual), qual você percebeu ser mais rápido e fluido?";
+    }
+    return "Comparando o primeiro clique de filtro (Filtragem Linear em Array) com o segundo clique de filtro (Acesso Direto Indexado), qual você percebeu ser mais rápido e fluido?";
+  })();
 
   const enviarParaGoogleFormsUnificado = async (payload: any) => {
     const FORM_URL = "https://docs.google.com/forms/d/e/1FAIpQLSfZVSsHBJcVM2xzvX1pC8xMKpeMAPEaMiZI3ZoLC7zwP_DeCQ/formResponse";
@@ -124,29 +137,79 @@ export function useExperimento() {
     }
   };
 
+  const executarFiltragemTelemetria = (categoria: string) => {
+    if (categoria === "todos") return; // Obriga a clicar em uma categoria específica para testar o estresse
+    
+    if (etapaExperimento === "FILTRO_LINEAR") {
+      setIsLoading(true);
+      setTimeout(() => {
+        const t0 = performance.now();
+        // O processarProdutos interceptará essa etapa e rodará o .filter() O(n)
+        setCategoriaSelecionada(categoria);
+        const t1 = performance.now();
+        
+        setTemposFiltro(prev => ({ ...prev, linearMs: t1 - t0 }));
+        setEtapaExperimento("FILTRO_INDEXADO");
+        setIsLoading(false);
+      }, 50);
+    }
+    else if (etapaExperimento === "FILTRO_INDEXADO") {
+      setIsLoading(true);
+      setTimeout(() => {
+        const t0 = performance.now();
+        // O processarProdutos interceptará essa etapa e rodará o Mapa O(1)
+        setCategoriaSelecionada(categoria);
+        const t1 = performance.now();
+        
+        setTemposFiltro(prev => ({ ...prev, indexadoMs: t1 - t0 }));
+        setEtapaExperimento("AVALIACAO_FILTRAGEM");
+        setIsLoading(false);
+        setTimeout(() => { setIsPopupOpen(true); }, 1500);
+      }, 50);
+    } else {
+      setCategoriaSelecionada(categoria);
+    }
+  };
+
   const salvarRespostaLikert = async (notaComparativa: number) => {
     if (etapaExperimento === "AVALIACAO_BUSCA") {
-      setDadosBuscaAcumulados({
-        arrayMs: temposBusca.arrayMs.toFixed(4),
-        hashMs: temposBusca.hashMs.toFixed(4),
-        likert: notaComparativa
-      });
+      setDadosAcumulados(prev => ({
+        ...prev,
+        bArrayMs: temposBusca.arrayMs.toFixed(4),
+        bHashMs: temposBusca.hashMs.toFixed(4),
+        bLikert: notaComparativa
+      }));
       setIsPopupOpen(false);
       setTermoBusca("");
       setEtapaExperimento("ORDEM_NATIVA");
     } 
     else if (etapaExperimento === "AVALIACAO_ORDENACAO") {
+      setDadosAcumulados(prev => ({
+        ...prev,
+        oNativaMs: temposOrdem.nativaMs.toFixed(4),
+        oAbbMs: temposOrdem.abbMs.toFixed(4),
+        oLikert: notaComparativa
+      }));
+      setIsPopupOpen(false);
+      setEtapaExperimento("FILTRO_LINEAR");
+    }
+    else if (etapaExperimento === "AVALIACAO_FILTRAGEM") {
+      // Chegamos ao fim da terceira etapa, dispara o payload completo e unificado!
       await enviarParaGoogleFormsUnificado({
         idUsuario: idSessao,
         dispositivo: checkDispositivo(),
-        bArray: dadosBuscaAcumulados.arrayMs,
-        bHash: dadosBuscaAcumulados.hashMs,
-        bLikert: dadosBuscaAcumulados.likert.toString(),
-        oNativo: temposOrdem.nativaMs.toFixed(4),
-        oAbb: temposOrdem.abbMs.toFixed(4),
-        oLikert: notaComparativa.toString()
+        bArray: dadosAcumulados.bArrayMs,
+        bHash: dadosAcumulados.bHashMs,
+        bLikert: dadosAcumulados.bLikert.toString(),
+        oNativo: dadosAcumulados.oNativaMs,
+        oAbb: dadosAcumulados.oAbbMs,
+        oLikert: dadosAcumulados.oLikert.toString(),
+        fLinear: temposFiltro.linearMs.toFixed(4),
+        fIndexado: temposFiltro.indexadoMs.toFixed(4),
+        fLikert: notaComparativa.toString()
       });
       setIsPopupOpen(false);
+      setCategoriaSelecionada("todos");
       setEtapaExperimento("FIM_EXPERIMENTO");
     }
   };
@@ -154,12 +217,14 @@ export function useExperimento() {
   return {
     etapaExperimento,
     termoBusca,
-    setTermoBusca,
+    categoriaSelecionada,
+    setCategoriaSelecionada,
     isPopupOpen,
     isLoading,
     perguntaPopupAtual,
     executarBuscaTelemetria,
     executarOrdenacaoTelemetria,
+    executarFiltragemTelemetria,
     salvarRespostaLikert
   };
 }

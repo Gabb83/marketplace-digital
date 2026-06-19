@@ -12,25 +12,26 @@ import { useExperimento } from "@/src/hooks/useExperimento";
 import { obterProdutosProcessados } from "@/src/utils/processarProdutos";
 
 export default function Home() {
-  const [currentCategoria, setCurrentCategoria] = useState("todos");
   const [currentSort, setCurrentSort] = useState("relevancia");
 
   // Todas as funções pesadas e estados do experimento agora vêm prontas do hook!
   const {
-    etapaExperimento,
+   etapaExperimento,
     termoBusca,
+    categoriaSelecionada,
     isPopupOpen,
     isLoading,
     perguntaPopupAtual,
     executarBuscaTelemetria,
     executarOrdenacaoTelemetria,
+    executarFiltragemTelemetria,
     salvarRespostaLikert
   } = useExperimento();
 
   // Filtragem delegada ao utilitário isolado
-  const produtosExibidos = useMemo(() => {
-    return obterProdutosProcessados(termoBusca, currentCategoria, currentSort, etapaExperimento);
-  }, [currentCategoria, currentSort, termoBusca, etapaExperimento]);
+ const produtosExibidos = useMemo(() => {
+    return obterProdutosProcessados(termoBusca, categoriaSelecionada, currentSort, etapaExperimento);
+  }, [categoriaSelecionada, currentSort, termoBusca, etapaExperimento]);
 
   return (
     <div className="flex flex-col min-h-screen bg-gray-50">
@@ -38,9 +39,15 @@ export default function Home() {
         {etapaExperimento === "BUSCA_ARRAY" && <span>🔬 <strong>Etapa 1/2: Busca (Cenário A)</strong> | Procure pelo código <span className="bg-white text-purple-700 px-1.5 py-0.5 rounded font-bold mx-1">99999</span> na barra de pesquisa.</span>}
         {etapaExperimento === "BUSCA_HASH" && <span>🔬 <strong>Etapa 1/2: Busca (Cenário B)</strong> | Agora limpe a barra, busque por <span className="bg-white text-purple-700 px-1.5 py-0.5 rounded font-bold mx-1">100000</span> e compare.</span>}
         {etapaExperimento === "AVALIACAO_BUSCA" && <span>🎉 Salvando dados parciais de busca...</span>}
+        
         {etapaExperimento === "ORDEM_NATIVA" && <span>🔬 <strong>Etapa 2/2: Ordenação (Cenário A)</strong> | Escolha uma ordenação no menu (ex: <i>Menor Preço</i>) para rodar o método 1.</span>}
         {etapaExperimento === "ORDEM_ABB" && <span>🔬 <strong>Etapa 2/2: Ordenação (Cenário B)</strong> | Mude a ordenação para <strong>qualquer outra opção</strong> para rodar o método 2 e concluir.</span>}
         {etapaExperimento === "AVALIACAO_ORDENACAO" && <span>🎉 Enviando relatório consolidado ao banco...</span>}
+        
+        {etapaExperimento === "FILTRO_LINEAR" && <span>🔬 <strong>Etapa 3/3: Filtragem (Cenário A)</strong> | Clique em qualquer categoria na barra lateral (ex: <i>Eletrônicos</i>).</span>}
+        {etapaExperimento === "FILTRO_INDEXADO" && <span>🔬 <strong>Etapa 3/3: Filtragem (Cenário B)</strong> | Mude para **outra categoria qualquer** para rodar o método otimizado.</span>}
+        {etapaExperimento === "AVALIACAO_FILTRAGEM" && <span>🎉 Computando relatório consolidado final...</span>}
+        
         {etapaExperimento === "FIM_EXPERIMENTO" && <span>🏆 Experimento concluído! Sua participação foi unificada com sucesso na base de dados. Obrigado!</span>}
       </div>
 
@@ -49,7 +56,7 @@ export default function Home() {
       <main className="flex-1 max-w-7xl w-full mx-auto px-4 py-6">  
         <div className="flex flex-col md:flex-row gap-6">
           <aside className="w-full md:w-64 shrink-0">              
-            <FilterSideBar selectedCategoria={currentCategoria} onSelectCategoria={setCurrentCategoria} />
+            <FilterSideBar selectedCategoria={categoriaSelecionada} onSelectCategoria={executarFiltragemTelemetria} />
           </aside>
 
           <section className="flex-1">
