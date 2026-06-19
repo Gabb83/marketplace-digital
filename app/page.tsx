@@ -8,239 +8,29 @@ import HeaderComponent from "@/src/components/Header";
 import ProductCard from "@/src/components/ProductCard";
 import SortBar from "@/src/components/SortBar";
 import LikertPopup from "@/src/components/LikertPopup";
-import { ProdutosMocks } from "@/src/data/products";
-import { buscarNoArray, buscarNaHashTable } from "@/src/utils/algoritmosBusca";
-import { ArvoreBinariaBusca, embaralharProdutosDeterministico } from "@/src/utils/algoritmosOrdenacao";
-
-type EtapaFluxo = 
-  | "BUSCA_ARRAY" | "BUSCA_HASH" | "AVALIACAO_BUSCA" 
-  | "ORDEM_NATIVA" | "ORDEM_ABB" | "AVALIACAO_ORDENACAO" 
-  | "FIM_EXPERIMENTO";
+import { useExperimento } from "@/src/hooks/useExperimento";
+import { obterProdutosProcessados } from "@/src/utils/processarProdutos";
 
 export default function Home() {
   const [currentCategoria, setCurrentCategoria] = useState("todos");
   const [currentSort, setCurrentSort] = useState("relevancia");
-  const [termoBusca, setTermoBusca] = useState("");
 
-  const [etapaExperimento, setEtapaExperimento] = useState<EtapaFluxo>("BUSCA_ARRAY");
-  const [isPopupOpen, setIsPopupOpen] = useState(false);
+  // Todas as funções pesadas e estados do experimento agora vêm prontas do hook!
+  const {
+    etapaExperimento,
+    termoBusca,
+    isPopupOpen,
+    isLoading,
+    perguntaPopupAtual,
+    executarBuscaTelemetria,
+    executarOrdenacaoTelemetria,
+    salvarRespostaLikert
+  } = useExperimento();
 
-  const [isLoading, setIsLoading] = useState<boolean>(false);
-
-  // ID único de sessão persistente e detecção de dispositivo para o rigor científico do paper
-  const [idSessao] = useState(() => Math.random().toString(36).substring(2, 6).toUpperCase());
-  const checkDispositivo = () => {
-    if (typeof window !== "undefined") {
-      return window.innerWidth < 768 ? "MOBILE" : "DESKTOP";
-    }
-    return "UNKNOWN";
-  };
-
-  // Estados temporários de telemetria locais
-  const [temposBusca, setTemposBusca] = useState({ arrayMs: 0, hashMs: 0 });
-  const [temposOrdem, setTemposOrdem] = useState({ nativaMs: 0, abbMs: 0 });
-
-  // Estado que acumula a primeira etapa para unificar o registro no Forms
-  const [dadosBuscaAcumulados, setDadosBuscaAcumulados] = useState({
-    arrayMs: "0",
-    hashMs: "0",
-    likert: 0
-  });
-
-  const perguntaPopupAtual = etapaExperimento === "AVALIACAO_BUSCA"
-    ? "Comparando a primeira busca (Varredura Linear em Array) com a segunda busca (Acesso Direto via Hash Table), qual você percebeu ser mais rápida e fluida?"
-    : "Comparando o primeiro cenário de ordenação (Algoritmo Nativo Timsort) com o segundo cenário (Árvore Binária de Busca Manual), qual você percebeu ser mais rápido e fluido?";
-
-  // FILTRAGEM E RENDEREZAÇÃO DA VITRINE
+  // Filtragem delegada ao utilitário isolado
   const produtosExibidos = useMemo(() => {
-    let dados = [...ProdutosMocks];
-
-    if (termoBusca.trim() !== "") {
-      if (termoBusca.includes("99999")) {
-        dados = buscarNoArray(dados, termoBusca);
-      } else {
-        dados = buscarNaHashTable(dados, termoBusca);
-      }
-    }
-
-    if (currentCategoria !== "todos") {
-      dados = dados.filter((p) => p.categoria === currentCategoria);
-    }
-
-    const criterio = currentSort === "preco-crescente" ? "crescente" : "decrescente";
-    if (currentSort !== "relevancia") {
-      if (etapaExperimento === "FIM_EXPERIMENTO") {
-        const dadosEmbaralhar = embaralharProdutosDeterministico(dados);
-        const abb = new ArvoreBinariaBusca(criterio);
-        dadosEmbaralhar.forEach(p => abb.inserir(p));
-        dados = abb.getProdutosOrdenados();
-      } else {
-        dados.sort((a, b) => {
-          const precoA = typeof a.preco === "string" ? parseFloat(a.preco) : a.preco;
-          const precoB = typeof b.preco === "string" ? parseFloat(b.preco) : b.preco;
-          return criterio === "crescente" ? precoA - precoB : precoB - precoA;
-        });
-      }
-    } else {
-      dados.sort((a, b) => b.avaliacao - a.avaliacao);
-    }
-
-    return dados;
+    return obterProdutosProcessados(termoBusca, currentCategoria, currentSort, etapaExperimento);
   }, [currentCategoria, currentSort, termoBusca, etapaExperimento]);
-
-  // FUNÇÃO DE ENVIO UNIFICADA: Dispara o payload completo em uma única linha da planilha
-  const enviarParaGoogleFormsUnificado = async (payload: {
-    idUsuario: string;
-    dispositivo: string;
-    bArray: string;
-    bHash: string;
-    bLikert: string;
-    oNativo: string;
-    oAbb: string;
-    oLikert: string;
-  }) => {
-    const FORM_URL = "https://docs.google.com/forms/d/e/1FAIpQLSfZVSsHBJcVM2xzvX1pC8xMKpeMAPEaMiZI3ZoLC7zwP_DeCQ/formResponse";
-
-    const formData = new URLSearchParams();
-    
-    // ATENÇÃO MÁXIMA AO MAPEAMENTO DOS ENTRYS:
-    formData.append("entry.432036167", payload.idUsuario);    // Tem que receber o ID (Ex: KZ7R)
-    formData.append("entry.314801769", payload.dispositivo);  // Tem que receber o DESKTOP/MOBILE
-    formData.append("entry.603723243", payload.bArray);       // Tempo da busca em array
-    formData.append("entry.750695508", payload.bHash);        // Tempo da busca em hash
-    formData.append("entry.62742821", payload.bLikert);       // Nota Likert da busca
-    formData.append("entry.1707197018", payload.oNativo);     // Tempo da ordenação nativa
-    formData.append("entry.1706201349", payload.oAbb);        // Tempo da ordenação ABB
-    formData.append("entry.383115611", payload.oLikert);       // Nota Likert da ordenação
-
-    try {
-      await fetch(FORM_URL, {
-        method: "POST",
-        mode: "no-cors",
-        headers: { "Content-Type": "application/x-www-form-urlencoded" },
-        body: formData.toString(),
-      });
-      console.log("%c✓ [Google Forms] Registro unificado enviado corretamente!", "color: #a855f7; font-weight: bold;");
-    } catch (error) {
-      console.error("Falha ao submeter registro unificado:", error);
-    }
-  };
-
-  const handleSearchSubmit = (termo: string) => {
-  const termoTratado = termo.toLowerCase().trim();
-  let dadosBase = [...ProdutosMocks];
-
-  if (etapaExperimento === "BUSCA_ARRAY" && termoTratado.includes("99999")) {
-    setIsLoading(true); // Liga o spinner
-
-    setTimeout(() => {
-      const t0 = performance.now();
-      buscarNoArray(dadosBase, termoTratado);
-      const t1 = performance.now();
-      
-      setTemposBusca(prev => ({ ...prev, arrayMs: t1 - t0 }));
-      setTermoBusca(termoTratado);
-      setEtapaExperimento("BUSCA_HASH");
-      setIsLoading(false); // Desliga o spinner
-    }, 50); // 50ms é o suficiente para o React renderizar o spinner na tela
-  } 
-  else if (etapaExperimento === "BUSCA_HASH" && termoTratado.includes("100000")) {
-    setIsLoading(true);
-
-    setTimeout(() => {
-      const t0 = performance.now();
-      buscarNaHashTable(dadosBase, termoTratado);
-      const t1 = performance.now();
-      
-      setTemposBusca(prev => ({ ...prev, hashMs: t1 - t0 }));
-      setTermoBusca(termoTratado);
-      setEtapaExperimento("AVALIACAO_BUSCA");
-      setIsLoading(false);
-      
-      setTimeout(() => { setIsPopupOpen(true); }, 1500);
-    }, 50);
-  } else if (etapaExperimento !== "BUSCA_ARRAY" && etapaExperimento !== "BUSCA_HASH") {
-    setTermoBusca(termoTratado);
-  } else {
-    alert(etapaExperimento === "BUSCA_ARRAY" ? "Por favor, busque pelo código: 99999" : "Por favor, busque pelo código: 100000");
-  }
-};
-
-  const handleSortChange = (sortOption: string) => {
-  setCurrentSort(sortOption);
-  const criterio = sortOption === "preco-crescente" ? "crescente" : "decrescente";
-  let dadosBase = [...ProdutosMocks]; 
-
-  if (etapaExperimento === "ORDEM_NATIVA") {
-    setIsLoading(true);
-
-    setTimeout(() => {
-      const t0 = performance.now();
-      dadosBase.sort((a, b) => {
-        const precoA = typeof a.preco === "string" ? parseFloat(a.preco) : a.preco;
-        const precoB = typeof b.preco === "string" ? parseFloat(b.preco) : b.preco;
-        return criterio === "crescente" ? precoA - precoB : precoB - precoA;
-      });
-      const t1 = performance.now();
-
-      setTemposOrdem(prev => ({ ...prev, nativaMs: t1 - t0 }));
-      setEtapaExperimento("ORDEM_ABB");
-      setIsLoading(false);
-    }, 50);
-  } 
-  else if (etapaExperimento === "ORDEM_ABB") {
-    setIsLoading(true);
-
-    setTimeout(() => {
-      const t0 = performance.now();
-      const dadosEmbaralhar = embaralharProdutosDeterministico(dadosBase);
-      const abb = new ArvoreBinariaBusca(criterio);
-      dadosEmbaralhar.forEach(p => abb.inserir(p));
-      abb.getProdutosOrdenados();
-      const t1 = performance.now();
-
-      setTemposOrdem(prev => ({ ...prev, abbMs: t1 - t0 }));
-      setEtapaExperimento("AVALIACAO_ORDENACAO");
-      setIsLoading(false);
-      
-      setTimeout(() => { setIsPopupOpen(true); }, 1500);
-    }, 50);
-  }
-};
-
-  const handleSalvarTelemetriaDaEtapa = async (notaComparativa: number) => {
-    if (etapaExperimento === "AVALIACAO_BUSCA") {
-      // Guarda os dados da busca no estado local e avança sem disparar requisição externa
-      setDadosBuscaAcumulados({
-        arrayMs: temposBusca.arrayMs.toFixed(4),
-        hashMs: temposBusca.hashMs.toFixed(4),
-        likert: notaComparativa
-      });
-
-      setIsPopupOpen(false);
-      setTermoBusca("");
-      setEtapaExperimento("ORDEM_NATIVA");
-    } 
-    else if (etapaExperimento === "AVALIACAO_ORDENACAO") {
-      const tNativo = temposOrdem.nativaMs.toFixed(4);
-      const tAbb = temposOrdem.abbMs.toFixed(4);
-
-      // Envia de uma vez só todo o fluxo acumulado do usuário atual
-      await enviarParaGoogleFormsUnificado({
-        idUsuario: idSessao,
-        dispositivo: checkDispositivo(),
-        bArray: dadosBuscaAcumulados.arrayMs,
-        bHash: dadosBuscaAcumulados.hashMs,
-        bLikert: dadosBuscaAcumulados.likert.toString(),
-        oNativo: tNativo,
-        oAbb: tAbb,
-        oLikert: notaComparativa.toString()
-      });
-
-      setIsPopupOpen(false);
-      setEtapaExperimento("FIM_EXPERIMENTO");
-    }
-  };
 
   return (
     <div className="flex flex-col min-h-screen bg-gray-50">
@@ -254,7 +44,7 @@ export default function Home() {
         {etapaExperimento === "FIM_EXPERIMENTO" && <span>🏆 Experimento concluído! Sua participação foi unificada com sucesso na base de dados. Obrigado!</span>}
       </div>
 
-      <HeaderComponent onSearch={handleSearchSubmit} />
+      <HeaderComponent onSearch={executarBuscaTelemetria} />
 
       <main className="flex-1 max-w-7xl w-full mx-auto px-4 py-6">  
         <div className="flex flex-col md:flex-row gap-6">
@@ -264,16 +54,16 @@ export default function Home() {
 
           <section className="flex-1">
             <div className="bg-white p-4 rounded-lg border border-gray-200 shadow-sm mb-4">
-              <SortBar currentSort={currentSort} onSortChange={handleSortChange} totalProdutos={produtosExibidos.length} />
+              <SortBar currentSort={currentSort} onSortChange={executarOrdenacaoTelemetria} totalProdutos={produtosExibidos.length} />
             </div>
 
-            <div className="bg-white p-4 rounded-lg border border-gray-200 shadow-sm">
-              {isLoading ? (
+            <div className="bg-white p-4 rounded-lg border border-gray-200 shadow-sm relative min-h-75">
+              {isLoading && (
                 <div className="absolute inset-0 bg-white/70 flex flex-col items-center justify-center z-10 backdrop-blur-sm">
                   <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600"></div>
                   <p className="text-sm text-gray-500 mt-3 font-medium">Processando estrutura de dados...</p>
                 </div>
-              ) : null}
+              )}
 
               {produtosExibidos.length > 0 ? (
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -293,7 +83,7 @@ export default function Home() {
 
       <LikertPopup 
         isOpen={isPopupOpen} 
-        onEnviarResposta={handleSalvarTelemetriaDaEtapa} 
+        onEnviarResposta={salvarRespostaLikert} 
         tituloContexto={perguntaPopupAtual}
       />
     </div>
