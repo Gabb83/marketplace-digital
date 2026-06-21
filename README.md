@@ -1,33 +1,33 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# AlphaStore (Martketplace // E-commerce)
 
-## Getting Started
+AlphaStore é um ambiente de simulação de um marketplace, onde os usuários podem realizar operações de filtragem, ordenação e busca de produtos. O objetivo é coletar dados de comportamento dos usuários como objeto de estudo acerca de fluidez e experiencia de uso.
 
-First, run the development server:
+## 🚀 Tecnologias Utilizadas
+Este projeto foi construído utilizando as melhores tecnologias do ecossistema React:
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+- [Next.js 15](https://nextjs.org/) - Framework React para produção.
+- [Tailwind CSS](https://tailwindcss.com/) - Estilização baseada em utilitários.
+- [Lucide/React Icons](https://react-icons.github.io/react-icons/) - Pacote de ícones.
+- [TypeScript](https://www.typescriptlang.org/) - Tipagem estática para maior segurança.
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
-
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
-
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
-
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## 💻 Como Rodar o Projeto
+1. Clone o repositório:
+   ```bash
+   git clone https://github.com/Gabb83/pomodoro.git
+    ```
+2. Navegue até o diretório do projeto:
+    ```bash
+    cd pomodoro
+    ```
+3. Instale as dependências (certifique-se de ter o Node.js instalado):
+    ```bash
+    npm install
+    ```
+4. Inicie o servidor de desenvolvimento:
+    ```bash
+    npm run dev
+    ```
+5. Abra o navegador e acesse `http://localhost:3000` para ver o aplicativo em ação.
 
 ## Deploy on Vercel
 
