@@ -2,6 +2,8 @@
 import { useState } from "react";
 import { ProdutosMocks } from "@/src/data/products";
 import { buscarNoArray, buscarNaHashTable } from "@/src/utils/algoritmosBusca";
+import { ArvoreBinariaBusca, embaralharProdutosDeterministico } from "@/src/utils/algoritmosOrdenacao";
+import { filtrarPorCategoriaLinear } from "@/src/utils/algoritmosFiltro";
 
 export type EtapaFluxo = 
   | "BUSCA_ARRAY" | "BUSCA_HASH" | "AVALIACAO_BUSCA" 
@@ -15,8 +17,6 @@ export function useExperimento() {
   const [isLoading, setIsLoading] = useState(false);
   const [termoBusca, setTermoBusca] = useState("");
   const [categoriaSelecionada, setCategoriaSelecionada] = useState("todos");
-  
-  // 🔥 NOVO: Estado de ordenação movido para dentro do hook para sincronia visual
   const [currentSort, setCurrentSort] = useState("relevancia");
 
   const [idSessao] = useState(() => Math.random().toString(36).substring(2, 6).toUpperCase());
@@ -28,6 +28,9 @@ export function useExperimento() {
     bArrayMs: "0", bHashMs: "0", bLikert: 0,
     oNativaMs: "0", oAbbMs: "0", oLikert: 0
   });
+
+  // ⏱️ Parâmetro Metodológico: Garante que o Spinner fique visível tempo suficiente para o cérebro registrar
+  const TEMPO_MINIMO_SPINNER = 400;
 
   const checkDispositivo = () => {
     if (typeof window !== "undefined") {
@@ -69,9 +72,9 @@ export function useExperimento() {
         headers: { "Content-Type": "application/x-www-form-urlencoded" }, 
         body: formData.toString() 
       });
-      console.log("%c✓ [Metodologia] Registro unificado enviado com sucesso!", "color: #22c55e; font-weight: bold;");
+      console.log("%c✓ [Metodologia] Registro unificado enviado!", "color: #22c55e; font-weight: bold;");
     } catch (error) {
-      console.error("Falha ao submeter registro unificado:", error);
+      console.error("Falha ao submeter registro:", error);
     }
   };
 
@@ -85,11 +88,12 @@ export function useExperimento() {
         const t0 = performance.now();
         buscarNoArray(dadosBase, termoTratado);
         const t1 = performance.now();
+        
         setTemposBusca(prev => ({ ...prev, arrayMs: t1 - t0 }));
         setTermoBusca(termoTratado);
         setEtapaExperimento("BUSCA_HASH");
         setIsLoading(false);
-      }, 50);
+      }, 100);
     } 
     else if (etapaExperimento === "BUSCA_HASH" && termoTratado.includes("100000")) {
       setIsLoading(true);
@@ -97,12 +101,13 @@ export function useExperimento() {
         const t0 = performance.now();
         buscarNaHashTable(dadosBase, termoTratado);
         const t1 = performance.now();
+        
         setTemposBusca(prev => ({ ...prev, hashMs: t1 - t0 }));
         setTermoBusca(termoTratado);
         setEtapaExperimento("AVALIACAO_BUSCA");
         setIsLoading(false);
-        setTimeout(() => { setIsPopupOpen(true); }, 1500);
-      }, 50);
+        setTimeout(() => { setIsPopupOpen(true); }, 1000);
+      }, 100);
     } else if (etapaExperimento !== "BUSCA_ARRAY" && etapaExperimento !== "BUSCA_HASH") {
       setTermoBusca(termoTratado);
     } else {
@@ -111,31 +116,43 @@ export function useExperimento() {
   };
 
   const executarOrdenacaoTelemetria = (sortOption: string) => {
-    // 🔥 Sincroniza visualmente a opção escolhida no componente SortBar
-    setCurrentSort(sortOption);
-
     if (etapaExperimento === "ORDEM_NATIVA") {
       setIsLoading(true);
       setTimeout(() => {
         const t0 = performance.now();
-        // O utilitário obterProdutosProcessados encarrega-se da mutação visual
+        const dadosSimulados = [...ProdutosMocks];
+        dadosSimulados.sort((a, b) => Number(a.preco) - Number(b.preco));
         const t1 = performance.now();
+        
         setTemposOrdem(prev => ({ ...prev, nativaMs: t1 - t0 }));
+        setCurrentSort(sortOption);
         setEtapaExperimento("ORDEM_ABB");
-        setIsLoading(false);
-      }, 50);
+        
+        // 🔥 Mantém o Spinner em tela pelo tempo regulamentar de percepção visual
+        setTimeout(() => { setIsLoading(false); }, TEMPO_MINIMO_SPINNER);
+      }, 100);
     } 
     else if (etapaExperimento === "ORDEM_ABB") {
       setIsLoading(true);
       setTimeout(() => {
         const t0 = performance.now();
-        // A lógica pesada da árvore roda em segundo plano através do processador central
+        const dadosEmbaralhar = embaralharProdutosDeterministico([...ProdutosMocks]);
+        const abb = new ArvoreBinariaBusca(sortOption === "preco-crescente" ? "crescente" : "decrescente");
+        dadosEmbaralhar.forEach(p => abb.inserir(p));
+        abb.getProdutosOrdenados();
         const t1 = performance.now();
+        
         setTemposOrdem(prev => ({ ...prev, abbMs: t1 - t0 }));
+        setCurrentSort(sortOption);
         setEtapaExperimento("AVALIACAO_ORDENACAO");
-        setIsLoading(false);
-        setTimeout(() => { setIsPopupOpen(true); }, 1500);
-      }, 50);
+        
+        setTimeout(() => { 
+          setIsLoading(false); 
+          setTimeout(() => { setIsPopupOpen(true); }, 600);
+        }, TEMPO_MINIMO_SPINNER);
+      }, 100);
+    } else {
+      setCurrentSort(sortOption);
     }
   };
 
@@ -146,24 +163,33 @@ export function useExperimento() {
       setIsLoading(true);
       setTimeout(() => {
         const t0 = performance.now();
-        setCategoriaSelecionada(categoria);
+        filtrarPorCategoriaLinear([...ProdutosMocks], categoria);
         const t1 = performance.now();
+        
         setTemposFiltro(prev => ({ ...prev, linearMs: t1 - t0 }));
+        setCategoriaSelecionada(categoria);
         setEtapaExperimento("FILTRO_INDEXADO");
-        setIsLoading(false);
-      }, 50);
+        
+        // 🔥 Mantém o Spinner visível no Bloco de Filtro A
+        setTimeout(() => { setIsLoading(false); }, TEMPO_MINIMO_SPINNER);
+      }, 100);
     }
     else if (etapaExperimento === "FILTRO_INDEXADO") {
       setIsLoading(true);
       setTimeout(() => {
         const t0 = performance.now();
-        setCategoriaSelecionada(categoria);
         const t1 = performance.now();
+        
         setTemposFiltro(prev => ({ ...prev, indexadoMs: t1 - t0 }));
+        setCategoriaSelecionada(categoria);
         setEtapaExperimento("AVALIACAO_FILTRAGEM");
-        setIsLoading(false);
-        setTimeout(() => { setIsPopupOpen(true); }, 1500);
-      }, 50);
+        
+        // 🔥 Mantém o Spinner visível no Bloco de Filtro B
+        setTimeout(() => { 
+          setIsLoading(false); 
+          setTimeout(() => { setIsPopupOpen(true); }, 600);
+        }, TEMPO_MINIMO_SPINNER);
+      }, 100);
     } else {
       setCategoriaSelecionada(categoria);
     }
@@ -192,6 +218,8 @@ export function useExperimento() {
       setEtapaExperimento("FILTRO_LINEAR");
     }
     else if (etapaExperimento === "AVALIACAO_FILTRAGEM") {
+      setIsPopupOpen(false);
+      setIsLoading(true);
       await enviarParaGoogleFormsUnificado({
         idUsuario: idSessao,
         dispositivo: checkDispositivo(),
@@ -205,7 +233,7 @@ export function useExperimento() {
         fIndexado: temposFiltro.indexadoMs.toFixed(4),
         fLikert: notaComparativa.toString()
       });
-      setIsPopupOpen(false);
+      setIsLoading(false);
       setCategoriaSelecionada("todos");
       setEtapaExperimento("FIM_EXPERIMENTO");
     }
@@ -215,7 +243,7 @@ export function useExperimento() {
     etapaExperimento,
     termoBusca,
     categoriaSelecionada,
-    currentSort, // 🔥 Exposto para a Home escutar no useMemo
+    currentSort,
     isPopupOpen,
     isLoading,
     perguntaPopupAtual,
