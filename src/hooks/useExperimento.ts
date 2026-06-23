@@ -37,12 +37,12 @@ export function useExperimento() {
 
   const perguntaPopupAtual = (() => {
     if (etapaExperimento === "AVALIACAO_BUSCA") {
-      return "Comparando a primeira busca (Varredura Linear em Array) com a segunda busca (Acesso Direto via Hash Table), qual você percebeu ser mais rápida e fluida?";
+      return "Comparando a primeira busca com a segunda busca, qual você percebeu ser mais rápida e fluida?";
     }
     if (etapaExperimento === "AVALIACAO_ORDENACAO") {
-      return "Comparando o primeiro cenário de ordenação (Algoritmo Nativo Timsort) com o segundo cenário (Árvore Binária de Busca Manual), qual você percebeu ser mais rápido e fluido?";
+      return "Comparando o primeiro cenário de ordenação com o segundo cenário, qual você percebeu ser mais rápido e fluido?";
     }
-    return "Comparando o primeiro clique de filtro (Filtragem Linear em Array) com o segundo clique de filtro (Acesso Direto Indexado), qual você percebeu ser mais rápido e fluido?";
+    return "Comparando o primeiro clique de filtro com o segundo clique de filtro, qual você percebeu ser mais rápido e fluido?";
   })();
 
   const enviarParaGoogleFormsUnificado = async (payload: any) => {
