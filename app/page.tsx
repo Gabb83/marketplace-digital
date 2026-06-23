@@ -1,7 +1,7 @@
 // src/app/page.tsx
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo } from "react";
 import FilterSideBar from "@/src/components/FilterSideBar";
 import Footer from "@/src/components/Footer";
 import HeaderComponent from "@/src/components/Header"; 
@@ -12,13 +12,12 @@ import { useExperimento } from "@/src/hooks/useExperimento";
 import { obterProdutosProcessados } from "@/src/utils/processarProdutos";
 
 export default function Home() {
-  const [currentSort, setCurrentSort] = useState("relevancia");
-
-  // Todas as funções pesadas e estados do experimento agora vêm prontas do hook!
+  // 🔥 Todas as variáveis e funções reativas agora vêm unificadas do hook de telemetria
   const {
     etapaExperimento,
     termoBusca,
     categoriaSelecionada,
+    currentSort, // Ouvindo o estado controlado pelo hook
     isPopupOpen,
     isLoading,
     perguntaPopupAtual,
@@ -28,25 +27,25 @@ export default function Home() {
     salvarRespostaLikert
   } = useExperimento();
 
-  // Filtragem delegada ao utilitário isolado
- const produtosExibidos = useMemo(() => {
+  // 🔥 O useMemo agora monitoriza corretamente o "currentSort" vindo do hook
+  const produtosExibidos = useMemo(() => {
     return obterProdutosProcessados(termoBusca, categoriaSelecionada, currentSort, etapaExperimento);
   }, [categoriaSelecionada, currentSort, termoBusca, etapaExperimento]);
 
   return (
     <div className="flex flex-col min-h-screen bg-gray-50">
       <div className="w-full bg-purple-600 text-white text-center py-2 px-4 text-sm font-medium shadow-inner flex items-center justify-center gap-2">
-        {etapaExperimento === "BUSCA_ARRAY" && <span>🔬 <strong>Etapa 1/2: Busca (Cenário A)</strong> | Procure pelo código <span className="bg-white text-purple-700 px-1.5 py-0.5 rounded font-bold mx-1">99999</span> na barra de pesquisa.</span>}
-        {etapaExperimento === "BUSCA_HASH" && <span>🔬 <strong>Etapa 1/2: Busca (Cenário B)</strong> | Agora limpe a barra, busque por <span className="bg-white text-purple-700 px-1.5 py-0.5 rounded font-bold mx-1">100000</span> e compare.</span>}
+        {etapaExperimento === "BUSCA_ARRAY" && <span>🔬 <strong>Etapa 1/3: Busca (Cenário A)</strong> | Procure pelo código <span className="bg-white text-purple-700 px-1.5 py-0.5 rounded font-bold mx-1">99999</span> na barra de pesquisa.</span>}
+        {etapaExperimento === "BUSCA_HASH" && <span>🔬 <strong>Etapa 1/3: Busca (Cenário B)</strong> | Agora limpe a barra, busque por <span className="bg-white text-purple-700 px-1.5 py-0.5 rounded font-bold mx-1">100000</span> e compare.</span>}
         {etapaExperimento === "AVALIACAO_BUSCA" && <span>🎉 Salvando dados parciais de busca...</span>}
         
-        {etapaExperimento === "ORDEM_NATIVA" && <span>🔬 <strong>Etapa 2/2: Ordenação (Cenário A)</strong> | Escolha uma ordenação no menu (ex: <i>Menor Preço</i>) para rodar o método 1.</span>}
-        {etapaExperimento === "ORDEM_ABB" && <span>🔬 <strong>Etapa 2/2: Ordenação (Cenário B)</strong> | Mude a ordenação para <strong>qualquer outra opção</strong> para rodar o método 2 e concluir.</span>}
-        {etapaExperimento === "AVALIACAO_ORDENACAO" && <span>🎉 Enviando relatório consolidado ao banco...</span>}
+        {etapaExperimento === "ORDEM_NATIVA" && <span>🔬 <strong>Etapa 2/3: Ordenação (Cenário A)</strong> | Escolha uma ordenação no menu (ex: <i>Menor Preço</i>) para rodar o método 1.</span>}
+        {etapaExperimento === "ORDEM_ABB" && <span>🔬 <strong>Etapa 2/3: Ordenação (Cenário B)</strong> | Mude a ordenação para <strong>qualquer outra opção</strong> para rodar o método 2 e concluir.</span>}
+        {etapaExperimento === "AVALIACAO_ORDENACAO" && <span>🎉 Salvando dados parciais de ordenação...</span>}
         
         {etapaExperimento === "FILTRO_LINEAR" && <span>🔬 <strong>Etapa 3/3: Filtragem (Cenário A)</strong> | Clique em qualquer categoria na barra lateral (ex: <i>Eletrônicos</i>).</span>}
         {etapaExperimento === "FILTRO_INDEXADO" && <span>🔬 <strong>Etapa 3/3: Filtragem (Cenário B)</strong> | Mude para **outra categoria qualquer** para rodar o método otimizado.</span>}
-        {etapaExperimento === "AVALIACAO_FILTRAGEM" && <span>🎉 Computando relatório consolidado final...</span>}
+        {etapaExperimento === "AVALIACAO_FILTRAGEM" && <span>🎉 Enviando relatório consolidado final ao banco...</span>}
         
         {etapaExperimento === "FIM_EXPERIMENTO" && <span>🏆 Experimento concluído! Sua participação foi unificada com sucesso na base de dados. Obrigado!</span>}
       </div>
