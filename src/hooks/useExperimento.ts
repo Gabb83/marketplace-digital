@@ -49,6 +49,7 @@ export function useExperimento() {
     const FORM_URL = "https://docs.google.com/forms/d/e/1FAIpQLSfZVSsHBJcVM2xzvX1pC8xMKpeMAPEaMiZI3ZoLC7zwP_DeCQ/formResponse";
     const formData = new URLSearchParams();
     
+    // Mapeamento original das seções de Busca e Ordenação
     formData.append("entry.432036167", payload.idUsuario);
     formData.append("entry.314801769", payload.dispositivo);
     formData.append("entry.603723243", payload.bArray);
@@ -58,11 +59,21 @@ export function useExperimento() {
     formData.append("entry.1706201349", payload.oAbb);
     formData.append("entry.383115611", payload.oLikert);
 
+    // 🔬 Injeção dos novos IDs reais para a seção de Filtragem
+    formData.append("entry.1035977829", payload.fLinear); 
+    formData.append("entry.876981547", payload.fIndexado);
+    formData.append("entry.664100771", payload.fLikert);
+
     try {
-      await fetch(FORM_URL, { method: "POST", mode: "no-cors", headers: { "Content-Type": "application/x-www-form-urlencoded" }, body: formData.toString() });
-      console.log("%c✓ [Google Forms] Registro unificado enviado corretamente!", "color: #a855f7; font-weight: bold;");
+      await fetch(FORM_URL, { 
+        method: "POST", 
+        mode: "no-cors", 
+        headers: { "Content-Type": "application/x-www-form-urlencoded" }, 
+        body: formData.toString() 
+      });
+      console.log("%c✓ [Metodologia] Registro unificado (Busca, Ordenação e Filtro) enviado com sucesso!", "color: #22c55e; font-weight: bold;");
     } catch (error) {
-      console.error("Falha ao submeter registro unificado:", error);
+      console.error("Falha catastrófica ao submeter registro unificado:", error);
     }
   };
 

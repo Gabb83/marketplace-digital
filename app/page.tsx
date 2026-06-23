@@ -16,7 +16,7 @@ export default function Home() {
 
   // Todas as funções pesadas e estados do experimento agora vêm prontas do hook!
   const {
-   etapaExperimento,
+    etapaExperimento,
     termoBusca,
     categoriaSelecionada,
     isPopupOpen,
