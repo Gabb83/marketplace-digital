@@ -13,11 +13,11 @@ Este projeto foi construído utilizando as melhores tecnologias do ecossistema R
 ## 💻 Como Rodar o Projeto
 1. Clone o repositório:
    ```bash
-   git clone https://github.com/Gabb83/pomodoro.git
+   git clone https://github.com/Gabb83/marketplace-digital.git
     ```
 2. Navegue até o diretório do projeto:
     ```bash
-    cd pomodoro
+    cd marketplace-digital
     ```
 3. Instale as dependências (certifique-se de ter o Node.js instalado):
     ```bash
