@@ -1,7 +1,7 @@
 // src/app/page.tsx
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, useState, useEffect } from "react";
 import FilterSideBar from "@/src/components/FilterSideBar";
 import Footer from "@/src/components/Footer";
 import HeaderComponent from "@/src/components/Header"; 
@@ -12,12 +12,11 @@ import { useExperimento } from "@/src/hooks/useExperimento";
 import { obterProdutosProcessados } from "@/src/utils/processarProdutos";
 
 export default function Home() {
-  // 🔥 Todas as variáveis e funções reativas agora vêm unificadas do hook de telemetria
   const {
     etapaExperimento,
     termoBusca,
     categoriaSelecionada,
-    currentSort, // Ouvindo o estado controlado pelo hook
+    currentSort,
     isPopupOpen,
     isLoading,
     perguntaPopupAtual,
@@ -27,10 +26,31 @@ export default function Home() {
     salvarRespostaLikert
   } = useExperimento();
 
-  // 🔥 O useMemo agora monitoriza corretamente o "currentSort" vindo do hook
-  const produtosExibidos = useMemo(() => {
-    return obterProdutosProcessados(termoBusca, categoriaSelecionada, currentSort, etapaExperimento);
-  }, [categoriaSelecionada, currentSort, termoBusca, etapaExperimento]);
+  // 📖 Controle de Paginação Controlada para IHC
+  const ITENS_POR_PAGINA = 4;
+  const [paginaAtual, setPaginaAtual] = useState(1);
+
+  // 🔄 Regra Científica: Se mudar os critérios globais, reinicia a paginação para evitar overflow mental do DOM
+  useEffect(() => {
+    setPaginaAtual(1);
+  }, [categoriaSelecionada, currentSort, termoBusca]);
+
+  // 🧠 Execução algorítmica pesada isolada da renderização maciça
+  const { totalFiltrados, produtosPaginados } = useMemo(() => {
+    // 1. Roda o algoritmo bruto em cima dos 100.000 mocks
+    const todosFiltradosEOrdenados = obterProdutosProcessados(termoBusca, categoriaSelecionada, currentSort, etapaExperimento);
+    
+    // 2. Pagina apenas o pedaço necessário para proteger o ecossistema do navegador
+    const inicio = (paginaAtual - 1) * ITENS_POR_PAGINA;
+    const fim = inicio + ITENS_POR_PAGINA;
+    
+    return {
+      totalFiltrados: todosFiltradosEOrdenados.length,
+      produtosPaginados: todosFiltradosEOrdenados.slice(inicio, fim)
+    };
+  }, [categoriaSelecionada, currentSort, termoBusca, etapaExperimento, paginaAtual]);
+
+  const totalPaginas = Math.ceil(totalFiltrados / ITENS_POR_PAGINA);
 
   return (
     <div className="flex flex-col min-h-screen bg-gray-50">
@@ -58,27 +78,55 @@ export default function Home() {
             <FilterSideBar selectedCategoria={categoriaSelecionada} onSelectCategoria={executarFiltragemTelemetria} />
           </aside>
 
-          <section className="flex-1">
-            <div className="bg-white p-4 rounded-lg border border-gray-200 shadow-sm mb-4">
-              <SortBar currentSort={currentSort} onSortChange={executarOrdenacaoTelemetria} totalProdutos={produtosExibidos.length} />
+          <section className="flex-1 flex flex-col gap-4">
+            <div className="bg-white p-4 rounded-lg border border-gray-200 shadow-sm">
+              <SortBar currentSort={currentSort} onSortChange={executarOrdenacaoTelemetria} totalProdutos={totalFiltrados} />
             </div>
 
-            <div className="bg-white p-4 rounded-lg border border-gray-200 shadow-sm relative min-h-75">
+            <div className="bg-white p-4 rounded-lg border border-gray-200 shadow-sm relative min-h-[400px] flex flex-col justify-between">
               {isLoading && (
-                <div className="absolute inset-0 bg-white/70 flex flex-col items-center justify-center z-10 backdrop-blur-sm">
+                <div className="absolute inset-0 bg-white/70 flex flex-col items-center justify-center z-10 backdrop-blur-sm rounded-lg">
                   <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600"></div>
                   <p className="text-sm text-gray-500 mt-3 font-medium">Processando estrutura de dados...</p>
                 </div>
               )}
 
-              {produtosExibidos.length > 0 ? (
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                  {produtosExibidos.slice(0, 20).map((produto) => (
+              {/* Grid Principal de Produtos Paginados */}
+              {produtosPaginados.length > 0 ? (
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+                  {produtosPaginados.map((produto) => (
                     <ProductCard key={produto.id} produto={produto} />
                   ))}
                 </div>
               ) : (
-                <div className="py-12 text-center text-gray-400 text-sm">Nenhum produto listado para os filtros aplicados.</div>
+                <div className="py-12 text-center text-gray-400 text-sm flex-1 flex items-center justify-center">
+                  Nenhum produto listado para os filtros aplicados.
+                </div>
+              )}
+
+              {/* 🕹️ Barra de Navegação entre Páginas (Componente Científico Controlado) */}
+              {totalFiltrados > ITENS_POR_PAGINA && (
+                <div className="flex items-center justify-between border-t border-gray-100 pt-4 mt-auto">
+                  <span className="text-xs font-medium text-gray-400">
+                    Página {paginaAtual} de {totalPaginas || 1} ({totalFiltrados.toLocaleString()} itens)
+                  </span>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => setPaginaAtual(prev => Math.max(prev - 1, 1))}
+                      disabled={paginaAtual === 1 || isLoading}
+                      className="px-3 py-1.5 rounded-md border border-gray-200 text-xs font-semibold bg-gray-50 text-gray-600 hover:bg-gray-100 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
+                    >
+                      Anterior
+                    </button>
+                    <button
+                      onClick={() => setPaginaAtual(prev => Math.min(prev + 1, totalPaginas))}
+                      disabled={paginaAtual === totalPaginas || isLoading}
+                      className="px-3 py-1.5 rounded-md border border-gray-200 text-xs font-semibold bg-gray-50 text-gray-600 hover:bg-gray-100 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
+                    >
+                      Próximo
+                    </button>
+                  </div>
+                </div>
               )}
             </div>
           </section>
