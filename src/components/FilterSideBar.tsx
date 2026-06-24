@@ -15,19 +15,18 @@ export default function FilterSideBar({ onSelectCategoria, selectedCategoria } :
     { id: "vestuario", label: "Moda e Vestuário" },
   ];
   
-  return (
+  return(
     <aside className="w-full md:w-64 shrink-0">
       <div className="bg-white p-5 rounded-lg border border-gray-200 shadow-sm">
         <h2 className="font-semibold text-gray-900 text-base mb-4 tracking-tight">
           Categorias
         </h2>
         
-        {/* Lista de Filtros */}
         <ul className="space-y-1">
           {categorias.map((category) => {
             const isSelected = selectedCategoria === category.id;
             
-            return (
+            return(
               <li key={category.id}>
                 <button
                   onClick={() => onSelectCategoria(category.id)}
@@ -40,8 +39,6 @@ export default function FilterSideBar({ onSelectCategoria, selectedCategoria } :
                   `}
                 >
                   <span>{category.label}</span>
-                  
-                  {/* Indicador visual sutil (Simula um e-commerce real) */}
                   {isSelected && (
                     <span className="h-2 w-2 rounded-full bg-blue-600" />
                   )}
@@ -51,8 +48,6 @@ export default function FilterSideBar({ onSelectCategoria, selectedCategoria } :
           })}
         </ul>
 
-        {/* Linha divisória simulando filtros adicionais comuns (Preço, Nota) */}
-        {/* Isso ajuda a mascarar que apenas a categoria é o objeto de estudo */}
         <div className="mt-6 pt-6 border-t border-gray-100 opacity-40 pointer-events-none select-none">
           <h3 className="font-medium text-xs text-gray-400 uppercase tracking-wider mb-3">Faixa de Preço</h3>
           <div className="space-y-2">

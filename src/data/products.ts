@@ -9,7 +9,6 @@ export interface Products {
   votos: number;
 }
 
-// Substantivos e adjetivos para gerar nomes variados
 const substantivos = ["Smartphone", "Smartwatch", "Fone de Ouvido", "Mochila", "Camiseta", "Tênis", "Luminária", "Jogo de Panelas", "Bola de Futebol", "Teclado", "Mouse", "Monitor"];
 const adjetivos = ["Premium", "Ultra Light", "Pro", "Sport", "Touch", "Wireless", "Impermeável", "Titanium", "Advanced", "Elite", "Ergonômico", "Bluetooth"];
 const marcas = ["Alpha", "Beta", "Galaxy", "Delta", "Nexus", "Titan", "Quantum", "Volt"];
@@ -24,12 +23,8 @@ function gerarProdutosEmMassa(quantidade: number): Products[] {
     const marca = marcas[i % marcas.length];
     const cat = categorias[i % categorias.length];
     
-    // Fórmulas matemáticas fixas para que o servidor e o cliente gerem os mesmos valores
     const precoCalculado = parseFloat(((i * 17) % 1980 + 20).toFixed(2));
-    // Nova fórmula determinística variando de 1.2 a 5.0 estrelas
     const avaliacaoCalculada = parseFloat((1.0 + ((i * 7) % 41) * 0.1).toFixed(1));
-    
-    // Fórmula determinística para gerar número de votos dinâmicos entre 5 e 1500
     const votosCalculados = ((i * 23) % 1495) + 5;
 
     lista.push({
@@ -45,6 +40,5 @@ function gerarProdutosEmMassa(quantidade: number): Products[] {
   return lista;
 }
 
-// ALTERE O NÚMERO AQUI PARA INTENSIFICAR O ESTRESSE (Ex: 50000 ou 100000)
 export const ProdutosMocks: Products[] = gerarProdutosEmMassa(100000);
 console.log(`[Científico] Base de dados massiva inicializada com ${ProdutosMocks.length} produtos.`);

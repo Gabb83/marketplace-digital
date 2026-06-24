@@ -9,7 +9,7 @@ interface HeaderProps {
 }
 
 export default function Header({ onSearch }: HeaderProps) {
-  const [termo, setTermo] = useState("");
+  const [termo, setTermo] = useState<string | any>("");
 
   const handleSubmeter = (e: React.FormEvent) => {
     e.preventDefault();
@@ -18,7 +18,7 @@ export default function Header({ onSearch }: HeaderProps) {
     }
   };
 
-  return (
+  return(
     <header className="w-full bg-white border-b border-gray-200 sticky top-0 z-50 shadow-sm">
       <div className="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between gap-4">
         <div className="flex items-center gap-3">

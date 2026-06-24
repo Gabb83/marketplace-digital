@@ -20,11 +20,9 @@ export default function LikertPopup({ isOpen, onEnviarResposta, tituloContexto }
 
   const opcoesLikert = [1, 2, 3, 4, 5];
 
-  return (
+  return(
     <div className="fixed inset-0 bg-gray-900/40 backdrop-blur-md z-100 flex items-center justify-center p-4 transition-all animate-fade-in">
       <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6 border border-gray-100 flex flex-col gap-6">
-        
-        {/* Cabeçalho Neutro */}
         <div className="text-center">
           <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest block mb-2">
             Coleta de Percepção Psicométrica
@@ -34,9 +32,7 @@ export default function LikertPopup({ isOpen, onEnviarResposta, tituloContexto }
           </h3>
         </div>
 
-        {/* Bloco de Escala Horizontal */}
         <div className="flex flex-col gap-2">
-          {/* Fileira de Botões Numéricos */}
           <div className="flex justify-between items-center gap-2">
             {opcoesLikert.map((valor) => (
               <button

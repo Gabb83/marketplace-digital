@@ -82,8 +82,7 @@ export default function Home() {
             <div className="bg-white p-4 rounded-lg border border-gray-200 shadow-sm">
               <SortBar currentSort={currentSort} onSortChange={executarOrdenacaoTelemetria} totalProdutos={totalFiltrados} />
             </div>
-
-            <div className="bg-white p-4 rounded-lg border border-gray-200 shadow-sm relative min-h-[400px] flex flex-col justify-between">
+            <div className="bg-white p-4 rounded-lg border border-gray-200 shadow-sm relative min-h-100 flex flex-col justify-between">
               {isLoading && (
                 <div className="absolute inset-0 bg-white/70 flex flex-col items-center justify-center z-10 backdrop-blur-sm rounded-lg">
                   <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600"></div>
@@ -91,7 +90,6 @@ export default function Home() {
                 </div>
               )}
 
-              {/* Grid Principal de Produtos Paginados */}
               {produtosPaginados.length > 0 ? (
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
                   {produtosPaginados.map((produto) => (
@@ -104,7 +102,6 @@ export default function Home() {
                 </div>
               )}
 
-              {/* 🕹️ Barra de Navegação entre Páginas (Componente Científico Controlado) */}
               {totalFiltrados > ITENS_POR_PAGINA && (
                 <div className="flex items-center justify-between border-t border-gray-100 pt-4 mt-auto">
                   <span className="text-xs font-medium text-gray-400">

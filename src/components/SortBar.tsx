@@ -10,21 +10,17 @@ interface SortBarProps {
 export default function SortBar({
   currentSort, onSortChange, totalProdutos
 } : SortBarProps) {
-
   const sortOptions = [
     { id: "relevancia", label: "Mais Relevantes" },
     { id: "preco-crescente", label: "Menor Preço" },
     { id: "preco-decrescente", label: "Maior Preço" },
   ];
 
-  return (
+  return(
     <div className="bg-white p-4 rounded-lg border border-gray-200 shadow-sm flex flex-col sm:flex-row items-center justify-between gap-4">
-      {/* LADO ESQUERDO: Contador de Itens falso/dinâmico para dar realismo */}
       <div className="text-sm text-gray-500">
         Mostrando <span className="font-semibold text-gray-800">{totalProdutos}</span> produtos
       </div>
-
-      {/* LADO DIREITO: Seletor de Ordenação (GATILHO DO CENÁRIO II) */}
       <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
         <label htmlFor="sort-select" className="text-sm text-gray-600 whitespace-nowrap">
           Ordenar por:
