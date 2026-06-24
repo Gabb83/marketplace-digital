@@ -6,68 +6,70 @@ import { useState, useEffect } from "react";
 interface LikertPopupProps {
   isOpen: boolean;
   onEnviarResposta: (nota: number) => void;
-  tituloContexto: string; // Nova prop para o texto dinâmico
+  tituloContexto: string;
 }
 
 export default function LikertPopup({ isOpen, onEnviarResposta, tituloContexto }: LikertPopupProps) {
   const [notaSelecionada, setNotaSelecionada] = useState<number | null>(null);
 
-  // Reseta a nota selecionada toda vez que o modal abrir para um novo cenário
   useEffect(() => {
     if (isOpen) setNotaSelecionada(null);
   }, [isOpen]);
 
   if (!isOpen) return null;
 
-  const opcoesLikert = [
-    { valor: 1, rotulo: "A primeira operação foi MUITO melhor/mais rápida" },
-    { valor: 2, rotulo: "A primeira operação foi um pouco melhor" },
-    { valor: 3, rotulo: "Não notei diferença entre as duas" },
-    { valor: 4, rotulo: "A segunda operação foi um pouco melhor" },
-    { valor: 5, rotulo: "A segunda operação foi MUITO melhor/mais rápida" },
-  ];
+  const opcoesLikert = [1, 2, 3, 4, 5];
 
   return (
-    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
-      <div className="bg-white rounded-xl shadow-2xl max-w-lg w-full p-6 border border-gray-100">
+    <div className="fixed inset-0 bg-gray-900/40 backdrop-blur-md z-100 flex items-center justify-center p-4 transition-all animate-fade-in">
+      <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6 border border-gray-100 flex flex-col gap-6">
         
-        <div className="mb-6">
-          <span className="text-xs font-semibold text-blue-600 uppercase tracking-wider block mb-1">
-            Análise Comparativa de Desempenho
+        {/* Cabeçalho Neutro */}
+        <div className="text-center">
+          <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest block mb-2">
+            Coleta de Percepção Psicométrica
           </span>
-          <h3 className="text-lg font-bold text-gray-900 leading-snug">
-            {tituloContexto} {/* Injeta o título dinamicamente aqui */}
+          <h3 className="text-base font-semibold text-gray-800 leading-relaxed px-2">
+            {tituloContexto}
           </h3>
         </div>
 
-        <div className="flex flex-col gap-3 mb-6">
-          {opcoesLikert.map((opcao) => (
-            <button
-              key={opcao.valor}
-              type="button"
-              onClick={() => setNotaSelecionada(opcao.valor)}
-              className={`w-full p-3 rounded-lg border text-sm text-left transition-all duration-150 flex items-center gap-4
-                ${notaSelecionada === opcao.valor 
-                  ? "bg-blue-50 border-blue-600 text-blue-900 font-medium" 
-                  : "bg-gray-50 border-gray-200 text-gray-700 hover:bg-gray-100"
-                }`}
-            >
-              <span className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold border
-                ${notaSelecionada === opcao.valor ? "bg-blue-600 text-white border-blue-600" : "bg-white text-gray-400 border-gray-300"}`}>
-                {opcao.valor}
-              </span>
-              {opcao.rotulo}
-            </button>
-          ))}
+        {/* Bloco de Escala Horizontal */}
+        <div className="flex flex-col gap-2">
+          {/* Fileira de Botões Numéricos */}
+          <div className="flex justify-between items-center gap-2">
+            {opcoesLikert.map((valor) => (
+              <button
+                key={valor}
+                type="button"
+                onClick={() => setNotaSelecionada(valor)}
+                className={`flex-1 aspect-square sm:h-12 rounded-xl text-base font-semibold border transition-all duration-150 flex items-center justify-center
+                  ${notaSelecionada === valor 
+                    ? "bg-purple-600 border-purple-600 text-white shadow-md shadow-purple-200 scale-105" 
+                    : "bg-gray-50 border-gray-200 text-gray-600 hover:bg-gray-100 hover:border-gray-300 active:scale-95"
+                  } cursor-pointer`}
+              >
+                {valor}
+              </button>
+            ))}
+          </div>
+
+          <div className="flex justify-between text-[11px] font-medium text-gray-400 px-1 pt-1">
+            <span>1 (Muito Pior)</span>
+            <span>5 (Muito Melhor)</span>
+          </div>
         </div>
 
         <button
           onClick={() => { if (notaSelecionada !== null) onEnviarResposta(notaSelecionada); }}
           disabled={notaSelecionada === null}
-          className={`w-full py-3 rounded-lg text-sm font-semibold transition-all duration-150
-            ${notaSelecionada !== null ? "bg-blue-600 text-white hover:bg-blue-700" : "bg-gray-100 text-gray-400 cursor-not-allowed"}`}
+          className={`w-full py-3 rounded-xl text-sm font-semibold tracking-wide transition-all duration-150
+            ${notaSelecionada !== null 
+              ? "bg-gray-900 text-white hover:bg-gray-800 active:scale-[0.99] shadow-sm" 
+              : "bg-gray-100 text-gray-400 cursor-not-allowed"
+            } cursor-pointer`}
         >
-          Enviar Avaliação Científica
+          Confirmar e Avançar
         </button>
       </div>
     </div>
