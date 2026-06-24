@@ -1,4 +1,5 @@
 // src/hooks/useExperimento.ts
+
 import { useState } from "react";
 import { ProdutosMocks } from "@/src/data/products";
 import { buscarNoArray, buscarNaHashTable } from "@/src/utils/algoritmosBusca";
@@ -82,7 +83,7 @@ export function useExperimento() {
     const termoTratado = termo.toLowerCase().trim();
     let dadosBase = [...ProdutosMocks];
 
-    if (etapaExperimento === "BUSCA_ARRAY" && termoTratado.includes("99999")) {
+    if (etapaExperimento === "BUSCA_ARRAY" && termoTratado.includes("299999")) {
       setIsLoading(true);
       setTimeout(() => {
         const t0 = performance.now();
@@ -95,7 +96,7 @@ export function useExperimento() {
         setIsLoading(false);
       }, 100);
     } 
-    else if (etapaExperimento === "BUSCA_HASH" && termoTratado.includes("100000")) {
+    else if (etapaExperimento === "BUSCA_HASH" && termoTratado.includes("300000")) {
       setIsLoading(true);
       setTimeout(() => {
         const t0 = performance.now();
@@ -111,7 +112,7 @@ export function useExperimento() {
     } else if (etapaExperimento !== "BUSCA_ARRAY" && etapaExperimento !== "BUSCA_HASH") {
       setTermoBusca(termoTratado);
     } else {
-      alert(etapaExperimento === "BUSCA_ARRAY" ? "Por favor, busque pelo código: 99999" : "Por favor, busque pelo código: 100000");
+      alert(etapaExperimento === "BUSCA_ARRAY" ? "Por favor, busque pelo código: 299999" : "Por favor, busque pelo código: 300000");
     }
   };
 

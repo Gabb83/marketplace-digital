@@ -40,5 +40,5 @@ function gerarProdutosEmMassa(quantidade: number): Products[] {
   return lista;
 }
 
-export const ProdutosMocks: Products[] = gerarProdutosEmMassa(100000);
+export const ProdutosMocks: Products[] = gerarProdutosEmMassa(300000);
 console.log(`[Científico] Base de dados massiva inicializada com ${ProdutosMocks.length} produtos.`);
