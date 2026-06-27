@@ -27,5 +27,3 @@ export class IndexadorCategorias {
     return this.mapa[categoria] || [];
   }
 }
-
-
