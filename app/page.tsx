@@ -19,7 +19,7 @@ export default function Home() {
     currentSort,
     isPopupOpen,
     isLoading,
-    perguntaPopupAtual,
+    obterPerguntasPorEtapa,
     executarBuscaTelemetria,
     executarOrdenacaoTelemetria,
     executarFiltragemTelemetria,
@@ -132,10 +132,10 @@ export default function Home() {
 
       <Footer />
 
-      <LikertPopup 
-        isOpen={isPopupOpen} 
-        onEnviarResposta={salvarRespostaLikert} 
-        tituloContexto={perguntaPopupAtual}
+      <LikertPopup
+        isOpen={isPopupOpen}
+        perguntas={obterPerguntasPorEtapa()}
+        onEnviarRespostas={salvarRespostaLikert}
       />
     </div>
   );
