@@ -42,7 +42,6 @@ export function useExperimento() {
     fSatisfacao: 0
 });
 
-  // ⏱️ Parâmetro Metodológico: Garante que o Spinner fique visível tempo suficiente para o cérebro registrar
   const TEMPO_MINIMO_SPINNER = 400;
 
   const checkDispositivo = () => {
@@ -97,7 +96,7 @@ export function useExperimento() {
         }
       ];
     }
-    // ... repita o mesmo padrão mapeado para ORDENACAO e FILTRAGEM
+
     return [];
   };
 
@@ -180,7 +179,6 @@ export function useExperimento() {
         setCurrentSort(sortOption);
         setEtapaExperimento("ORDEM_ABB");
         
-        // 🔥 Mantém o Spinner em tela pelo tempo regulamentar de percepção visual
         setTimeout(() => { setIsLoading(false); }, TEMPO_MINIMO_SPINNER);
       }, 100);
     } 
@@ -222,7 +220,6 @@ export function useExperimento() {
         setCategoriaSelecionada(categoria);
         setEtapaExperimento("FILTRO_INDEXADO");
         
-        // 🔥 Mantém o Spinner visível no Bloco de Filtro A
         setTimeout(() => { setIsLoading(false); }, TEMPO_MINIMO_SPINNER);
       }, 100);
     }
@@ -236,7 +233,6 @@ export function useExperimento() {
         setCategoriaSelecionada(categoria);
         setEtapaExperimento("AVALIACAO_FILTRAGEM");
         
-        // 🔥 Mantém o Spinner visível no Bloco de Filtro B
         setTimeout(() => { 
           setIsLoading(false); 
           setTimeout(() => { setIsPopupOpen(true); }, 600);
@@ -247,69 +243,69 @@ export function useExperimento() {
     }
   };
 
-  const salvarRespostaLikert = async (
-  notaPercepcao: number,
-  notaSatisfacao: number
-) => {
-  if (etapaExperimento === "AVALIACAO_BUSCA") {
-    setDadosAcumulados(prev => ({
-      ...prev,
-      bArrayMs: temposBusca.arrayMs.toFixed(4),
-      bHashMs: temposBusca.hashMs.toFixed(4),
-      bPercepcao: notaPercepcao,
-      bSatisfacao: notaSatisfacao,
-    }));
+    const salvarRespostaLikert = async (
+    notaPercepcao: number,
+    notaSatisfacao: number
+  ) => {
+    if (etapaExperimento === "AVALIACAO_BUSCA") {
+      setDadosAcumulados(prev => ({
+        ...prev,
+        bArrayMs: temposBusca.arrayMs.toFixed(4),
+        bHashMs: temposBusca.hashMs.toFixed(4),
+        bPercepcao: notaPercepcao,
+        bSatisfacao: notaSatisfacao,
+      }));
 
-    setIsPopupOpen(false);
-    setTermoBusca("");
-    setEtapaExperimento("ORDEM_NATIVA");
-  }
+      setIsPopupOpen(false);
+      setTermoBusca("");
+      setEtapaExperimento("ORDEM_NATIVA");
+    }
 
-  else if (etapaExperimento === "AVALIACAO_ORDENACAO") {
-    setDadosAcumulados(prev => ({
-      ...prev,
-      oNativaMs: temposOrdem.nativaMs.toFixed(4),
-      oAbbMs: temposOrdem.abbMs.toFixed(4),
-      oPercepcao: notaPercepcao,
-      oSatisfacao: notaSatisfacao,
-    }));
+    else if (etapaExperimento === "AVALIACAO_ORDENACAO") {
+      setDadosAcumulados(prev => ({
+        ...prev,
+        oNativaMs: temposOrdem.nativaMs.toFixed(4),
+        oAbbMs: temposOrdem.abbMs.toFixed(4),
+        oPercepcao: notaPercepcao,
+        oSatisfacao: notaSatisfacao,
+      }));
 
-    setIsPopupOpen(false);
-    setEtapaExperimento("FILTRO_LINEAR");
-  }
+      setIsPopupOpen(false);
+      setEtapaExperimento("FILTRO_LINEAR");
+    }
 
-  else if (etapaExperimento === "AVALIACAO_FILTRAGEM") {
-    setIsPopupOpen(false);
-    setIsLoading(true);
+    else if (etapaExperimento === "AVALIACAO_FILTRAGEM") {
+      setIsPopupOpen(false);
+      setIsLoading(true);
 
-    await enviarParaGoogleFormsUnificado({
-      idUsuario: idSessao,
-      dispositivo: checkDispositivo(),
+      await enviarParaGoogleFormsUnificado({
+        idUsuario: idSessao,
+        dispositivo: checkDispositivo(),
 
-      // Busca
-      bArray: dadosAcumulados.bArrayMs,
-      bHash: dadosAcumulados.bHashMs,
-      bPercepcao: dadosAcumulados.bPercepcao.toString(),
-      bSatisfacao: dadosAcumulados.bSatisfacao.toString(),
+        // Busca
+        bArray: dadosAcumulados.bArrayMs,
+        bHash: dadosAcumulados.bHashMs,
+        bPercepcao: dadosAcumulados.bPercepcao.toString(),
+        bSatisfacao: dadosAcumulados.bSatisfacao.toString(),
 
-      // Ordenação
-      oNativo: dadosAcumulados.oNativaMs,
-      oAbb: dadosAcumulados.oAbbMs,
-      oPercepcao: dadosAcumulados.oPercepcao.toString(),
-      oSatisfacao: dadosAcumulados.oSatisfacao.toString(),
+        // Ordenação
+        oNativo: dadosAcumulados.oNativaMs,
+        oAbb: dadosAcumulados.oAbbMs,
+        oPercepcao: dadosAcumulados.oPercepcao.toString(),
+        oSatisfacao: dadosAcumulados.oSatisfacao.toString(),
 
-      // Filtragem
-      fLinear: temposFiltro.linearMs.toFixed(4),
-      fIndexado: temposFiltro.indexadoMs.toFixed(4),
-      fPercepcao: notaPercepcao.toString(),
-      fSatisfacao: notaSatisfacao.toString(),
-    });
+        // Filtragem
+        fLinear: temposFiltro.linearMs.toFixed(4),
+        fIndexado: temposFiltro.indexadoMs.toFixed(4),
+        fPercepcao: notaPercepcao.toString(),
+        fSatisfacao: notaSatisfacao.toString(),
+      });
 
-    setIsLoading(false);
-    setCategoriaSelecionada("todos");
-    setEtapaExperimento("FIM_EXPERIMENTO");
-  }
-};
+      setIsLoading(false);
+      setCategoriaSelecionada("todos");
+      setEtapaExperimento("FIM_EXPERIMENTO");
+    }
+  };
 
   return {
      etapaExperimento,

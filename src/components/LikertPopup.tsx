@@ -5,15 +5,14 @@ import { useState, useEffect } from "react";
 
 export interface PerguntaConfig {
   texto: string;
-  legendaMin: string; // Ex: "1 (Discordo Totalmente)"
-  legendaMax: string; // Ex: "5 (Concordo Totalmente)"
+  legendaMin: string;
+  legendaMax: string;
 }
 
 interface LikertPopupProps {
   isOpen: boolean;
-  // Agora o callback envia a nota da Pergunta 1 e da Pergunta 2 juntas ao final
   onEnviarRespostas: (notaPercepcao: number, notaSatisfacao: number) => void;
-  perguntas: PerguntaConfig[]; // Passamos o array com as duas perguntas configuradas
+  perguntas: PerguntaConfig[];
 }
 
 export default function LikertPopup({ isOpen, onEnviarRespostas, perguntas }: LikertPopupProps) {
@@ -21,7 +20,6 @@ export default function LikertPopup({ isOpen, onEnviarRespostas, perguntas }: Li
   const [notaP1, setNotaP1] = useState<number | null>(null);
   const [notaP2, setNotaP2] = useState<number | null>(null);
 
-  // Reseta os estados internos toda vez que o modal abre para um novo cenário
   useEffect(() => {
     if (isOpen) {
       setPasso(0);
@@ -53,20 +51,20 @@ export default function LikertPopup({ isOpen, onEnviarRespostas, perguntas }: Li
   };
 
   return (
-    <div className="fixed inset-0 bg-gray-900/40 backdrop-blur-md z-[100] flex items-center justify-center p-4 transition-all animate-fade-in">
+    <div className="fixed inset-0 bg-gray-900/40 backdrop-blur-md z-100 flex items-center justify-center p-4 transition-all animate-fade-in">
       <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6 border border-gray-100 flex flex-col gap-6">
         
-        {/* Cabeçalho com Indicador de Progresso */}
+        {/* Indicador de Progresso */}
         <div className="text-center">
-          <div className="flex justify-between items-center mb-2 px-1">
-            <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">
+          <div className="flex justify-between items-center mb-3 px-1">
+            <span className="text-[12px] font-bold text-gray-400 uppercase tracking-widest">
               Coleta Psicométrica
             </span>
-            <span className="text-[10px] font-bold bg-purple-50 text-purple-600 px-2 py-0.5 rounded-full">
+            <span className="text-[12px] bg-purple-50 text-blue-600 px-2 py-0.5 rounded-full">
               Etapa {passo + 1} de 2
             </span>
           </div>
-          <h3 className="text-base font-semibold text-gray-800 leading-relaxed px-2 min-h-[48px] flex items-center justify-center">
+          <h3 className="text-base font-semibold text-gray-800 leading-relaxed px-2 min-h-12 flex items-center justify-center">
             {perguntaAtual.texto}
           </h3>
         </div>
@@ -90,14 +88,12 @@ export default function LikertPopup({ isOpen, onEnviarRespostas, perguntas }: Li
             ))}
           </div>
 
-          {/* Legendas Dinâmicas baseadas na pergunta atual */}
           <div className="flex justify-between text-[11px] font-medium text-gray-400 px-1 pt-1">
             <span>{perguntaAtual.legendaMin}</span>
             <span>{perguntaAtual.legendaMax}</span>
           </div>
         </div>
 
-        {/* Botão de Ação */}
         <button
           onClick={handleAvancar}
           disabled={notaAtual === null}

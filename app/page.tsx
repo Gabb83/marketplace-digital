@@ -26,21 +26,16 @@ export default function Home() {
     salvarRespostaLikert
   } = useExperimento();
 
-  // 📖 Controle de Paginação Controlada para IHC
   const ITENS_POR_PAGINA = 4;
   const [paginaAtual, setPaginaAtual] = useState(1);
 
-  // 🔄 Regra Científica: Se mudar os critérios globais, reinicia a paginação para evitar overflow mental do DOM
   useEffect(() => {
     setPaginaAtual(1);
   }, [categoriaSelecionada, currentSort, termoBusca]);
 
-  // 🧠 Execução algorítmica pesada isolada da renderização maciça
   const { totalFiltrados, produtosPaginados } = useMemo(() => {
-    // 1. Roda o algoritmo bruto em cima dos 100.000 mocks
     const todosFiltradosEOrdenados = obterProdutosProcessados(termoBusca, categoriaSelecionada, currentSort, etapaExperimento);
     
-    // 2. Pagina apenas o pedaço necessário para proteger o ecossistema do navegador
     const inicio = (paginaAtual - 1) * ITENS_POR_PAGINA;
     const fim = inicio + ITENS_POR_PAGINA;
     
