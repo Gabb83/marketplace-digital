@@ -60,8 +60,8 @@ export function useExperimento() {
         },
         {
           texto: "Em relação à busca que você escolheu como mais fluida, o quão ela foi visivelmente superior em comparação à outra?",
-          legendaMin: "1 (Discordo Totalmente)",
-          legendaMax: "5 (Concordo Totalmente)",
+          legendaMin: "1 (Menor Superioridade)",
+          legendaMax: "5 (Maior Superioridade)",
           tipo: "likert",
         },
         {
@@ -73,7 +73,7 @@ export function useExperimento() {
       ];
     }
     
-     if (etapaExperimento === "AVALIACAO_ORDENACAO") {
+    if (etapaExperimento === "AVALIACAO_ORDENACAO") {
       return [
         {
           texto: "Qual das duas operações de ordenação foi mais fluida em tempo de resposta?",
@@ -81,8 +81,8 @@ export function useExperimento() {
         },
         {
           texto: "Em relação à ordenação que você escolheu como mais fluida, o quão ela foi visivelmente superior em comparação à outra?",
-          legendaMin: "1 (Discordo Totalmente)",
-          legendaMax: "5 (Concordo Totalmente)",
+          legendaMin: "1 (Menor Superioridade)",
+          legendaMax: "5 (Maior Superioridade)",
           tipo: "likert",
         },
         {
@@ -102,8 +102,8 @@ export function useExperimento() {
         },
         {
           texto: "Em relação à filtragem que você escolheu como mais fluida, o quão ela foi visivelmente superior em comparação à outra?",
-          legendaMin: "1 (Discordo Totalmente)",
-          legendaMax: "5 (Concordo Totalmente)",
+          legendaMin: "1 (Menor Superioridade)",
+          legendaMax: "5 (Maior Superioridade)",
           tipo: "likert",
         },
         {
