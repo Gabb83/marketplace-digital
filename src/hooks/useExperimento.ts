@@ -55,11 +55,11 @@ export function useExperimento() {
     if (etapaExperimento === "AVALIACAO_BUSCA") {
       return [
         {
-          texto: "Qual das duas operações foi mais rápida?",
+          texto: "Qual das duas operações de busca foi mais fluida em tempo de resposta?",
           tipo: "booleana",
         },
         {
-          texto: "A segunda experiência de busca foi visivelmente mais rápida e fluida do que a primeira.",
+          texto: "Em relação à busca que você escolheu como mais fluida, o quão ela foi visivelmente superior em comparação à outra?",
           legendaMin: "1 (Discordo Totalmente)",
           legendaMax: "5 (Concordo Totalmente)",
           tipo: "likert",
@@ -76,7 +76,11 @@ export function useExperimento() {
      if (etapaExperimento === "AVALIACAO_ORDENACAO") {
       return [
         {
-          texto: "A segunda experiência de ordenação foi visivelmente mais rápida e fluida do que a primeira.",
+          texto: "Qual das duas operações de ordenação foi mais fluida em tempo de resposta?",
+          tipo: "booleana",
+        },
+        {
+          texto: "Em relação à ordenação que você escolheu como mais fluida, o quão ela foi visivelmente superior em comparação à outra?",
           legendaMin: "1 (Discordo Totalmente)",
           legendaMax: "5 (Concordo Totalmente)",
           tipo: "likert",
@@ -93,7 +97,11 @@ export function useExperimento() {
     if (etapaExperimento === "AVALIACAO_FILTRAGEM") {
       return [
         {
-          texto: "A segunda experiência de filtragem foi visivelmente mais rápida e fluida do que a primeira.",
+          texto: "Qual das duas operações de filtragem foi mais fluida em tempo de resposta?",
+          tipo: "booleana",
+        },
+        {
+          texto: "Em relação à filtragem que você escolheu como mais fluida, o quão ela foi visivelmente superior em comparação à outra?",
           legendaMin: "1 (Discordo Totalmente)",
           legendaMax: "5 (Concordo Totalmente)",
           tipo: "likert",
