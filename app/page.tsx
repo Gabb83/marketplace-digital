@@ -130,7 +130,18 @@ export default function Home() {
       <LikertPopup
         isOpen={isPopupOpen}
         perguntas={obterPerguntasPorEtapa()}
-        onEnviarRespostas={salvarRespostaLikert}
+        onEnviarRespostas={(respostas) => {
+          const escolhaBooleana = respostas[0] as string;
+          const notaPercepcao = respostas[1] as number;
+          const notaSatisfacao = respostas[2] as number;
+
+          console.log(escolhaBooleana);
+
+          salvarRespostaLikert(
+            notaPercepcao,
+            notaSatisfacao
+          );
+        }}
       />
     </div>
   );

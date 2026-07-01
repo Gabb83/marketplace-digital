@@ -55,14 +55,20 @@ export function useExperimento() {
     if (etapaExperimento === "AVALIACAO_BUSCA") {
       return [
         {
+          texto: "Qual das duas operações foi mais rápida?",
+          tipo: "booleana",
+        },
+        {
           texto: "A segunda experiência de busca foi visivelmente mais rápida e fluida do que a primeira.",
           legendaMin: "1 (Discordo Totalmente)",
-          legendaMax: "5 (Concordo Totalmente)"
+          legendaMax: "5 (Concordo Totalmente)",
+          tipo: "likert",
         },
         {
           texto: "Como você avalia o seu nível de satisfação com o tempo de resposta visual ao realizar as buscas?",
           legendaMin: "1 (Muito Insatisfeito)",
-          legendaMax: "5 (Muito Satisfeito)"
+          legendaMax: "5 (Muito Satisfeito)",
+          tipo: "likert",
         }
       ];
     }
@@ -72,12 +78,14 @@ export function useExperimento() {
         {
           texto: "A segunda experiência de ordenação foi visivelmente mais rápida e fluida do que a primeira.",
           legendaMin: "1 (Discordo Totalmente)",
-          legendaMax: "5 (Concordo Totalmente)"
+          legendaMax: "5 (Concordo Totalmente)",
+          tipo: "likert",
         },
         {
           texto: "Como você avalia o seu nível de satisfação com o tempo de resposta visual ao realizar as ordenações?",
           legendaMin: "1 (Muito Insatisfeito)",
-          legendaMax: "5 (Muito Satisfeito)"
+          legendaMax: "5 (Muito Satisfeito)",
+          tipo: "likert",
         }
       ];
     }
@@ -87,12 +95,14 @@ export function useExperimento() {
         {
           texto: "A segunda experiência de filtragem foi visivelmente mais rápida e fluida do que a primeira.",
           legendaMin: "1 (Discordo Totalmente)",
-          legendaMax: "5 (Concordo Totalmente)"
+          legendaMax: "5 (Concordo Totalmente)",
+          tipo: "likert",
         },
         {
           texto: "Como você avalia o seu nível de satisfação com o tempo de resposta visual ao realizar as filtragem?",
           legendaMin: "1 (Muito Insatisfeito)",
-          legendaMax: "5 (Muito Satisfeito)"
+          legendaMax: "5 (Muito Satisfeito)",
+          tipo: "likert",
         }
       ];
     }
