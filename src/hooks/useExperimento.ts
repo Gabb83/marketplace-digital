@@ -8,6 +8,7 @@ import { filtrarPorCategoriaLinear } from "@/src/utils/algoritmosFiltro";
 import { PerguntaConfig } from "../components/LikertPopup";
 import { PERGUNTAS } from "@/src/config/perguntas";
 import { enviarExperimento } from "@/src/services/googleForms";
+import { medirTempo } from "@/src/utils/medirTempo";
 
 export type EtapaFluxo = 
   | "BUSCA_ARRAY" | "BUSCA_HASH" | "AVALIACAO_BUSCA" 
@@ -60,11 +61,15 @@ export function useExperimento() {
     if (etapaExperimento === "BUSCA_ARRAY" && termoTratado.includes("299999")) {
       setIsLoading(true);
       setTimeout(() => {
-        const t0 = performance.now();
-        buscarNoArray(dadosBase, termoTratado);
-        const t1 = performance.now();
-        
-        setTemposBusca(prev => ({ ...prev, arrayMs: t1 - t0 }));
+        const { tempoMs } = medirTempo(() =>
+          buscarNoArray(dadosBase, termoTratado)
+        );
+
+        setTemposBusca(prev => ({
+          ...prev,
+          arrayMs: tempoMs,
+        }));
+
         setTermoBusca(termoTratado);
         setEtapaExperimento("BUSCA_HASH");
         setIsLoading(false);
@@ -73,11 +78,15 @@ export function useExperimento() {
     else if (etapaExperimento === "BUSCA_HASH" && termoTratado.includes("300000")) {
       setIsLoading(true);
       setTimeout(() => {
-        const t0 = performance.now();
-        buscarNaHashTable(dadosBase, termoTratado);
-        const t1 = performance.now();
-        
-        setTemposBusca(prev => ({ ...prev, hashMs: t1 - t0 }));
+        const { tempoMs } = medirTempo(() =>
+          buscarNaHashTable(dadosBase, termoTratado)
+        );
+
+        setTemposBusca(prev => ({
+          ...prev,
+          hashMs: tempoMs,
+        }));
+
         setTermoBusca(termoTratado);
         setEtapaExperimento("AVALIACAO_BUSCA");
         setIsLoading(false);
@@ -94,12 +103,16 @@ export function useExperimento() {
     if (etapaExperimento === "ORDEM_NATIVA") {
       setIsLoading(true);
       setTimeout(() => {
-        const t0 = performance.now();
-        const dadosSimulados = [...ProdutosMocks];
-        dadosSimulados.sort((a, b) => Number(a.preco) - Number(b.preco));
-        const t1 = performance.now();
-        
-        setTemposOrdem(prev => ({ ...prev, nativaMs: t1 - t0 }));
+        const { tempoMs } = medirTempo(() => {
+          const dadosSimulados = [...ProdutosMocks];
+          dadosSimulados.sort((a, b) => Number(a.preco) - Number(b.preco));
+        });
+
+        setTemposOrdem(prev => ({
+          ...prev,
+          nativaMs: tempoMs,
+        }));
+
         setCurrentSort(sortOption);
         setEtapaExperimento("ORDEM_ABB");
         
@@ -109,14 +122,24 @@ export function useExperimento() {
     else if (etapaExperimento === "ORDEM_ABB") {
       setIsLoading(true);
       setTimeout(() => {
-        const t0 = performance.now();
-        const dadosEmbaralhar = embaralharProdutosDeterministico([...ProdutosMocks]);
-        const abb = new ArvoreBinariaBusca(sortOption === "preco-crescente" ? "crescente" : "decrescente");
-        dadosEmbaralhar.forEach(p => abb.inserir(p));
-        abb.getProdutosOrdenados();
-        const t1 = performance.now();
-        
-        setTemposOrdem(prev => ({ ...prev, abbMs: t1 - t0 }));
+        const { tempoMs } = medirTempo(() => {
+          const dadosEmbaralhar = embaralharProdutosDeterministico([...ProdutosMocks]);
+
+          const abb = new ArvoreBinariaBusca(
+            sortOption === "preco-crescente"
+              ? "crescente"
+              : "decrescente"
+          );
+
+          dadosEmbaralhar.forEach(p => abb.inserir(p));
+          abb.getProdutosOrdenados();
+        });
+
+        setTemposOrdem(prev => ({
+          ...prev,
+          abbMs: tempoMs,
+        }));
+
         setCurrentSort(sortOption);
         setEtapaExperimento("AVALIACAO_ORDENACAO");
         
@@ -136,11 +159,15 @@ export function useExperimento() {
     if (etapaExperimento === "FILTRO_LINEAR") {
       setIsLoading(true);
       setTimeout(() => {
-        const t0 = performance.now();
-        filtrarPorCategoriaLinear([...ProdutosMocks], categoria);
-        const t1 = performance.now();
+        const { tempoMs } = medirTempo(() =>
+          filtrarPorCategoriaLinear([...ProdutosMocks], categoria)
+        );
+
+        setTemposFiltro(prev => ({
+          ...prev,
+          linearMs: tempoMs,
+        }));
         
-        setTemposFiltro(prev => ({ ...prev, linearMs: t1 - t0 }));
         setCategoriaSelecionada(categoria);
         setEtapaExperimento("FILTRO_INDEXADO");
         
