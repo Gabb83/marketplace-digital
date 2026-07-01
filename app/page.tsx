@@ -19,7 +19,7 @@ export default function Home() {
     currentSort,
     isPopupOpen,
     isLoading,
-    obterPerguntasPorEtapa,
+    perguntas,
     executarBuscaTelemetria,
     executarOrdenacaoTelemetria,
     executarFiltragemTelemetria,
@@ -129,7 +129,7 @@ export default function Home() {
 
       <LikertPopup
         isOpen={isPopupOpen}
-        perguntas={obterPerguntasPorEtapa()}
+        perguntas={perguntas}
         onEnviarRespostas={(respostas) => {
           const escolhaBooleana = respostas[0] as string;
           const notaPercepcao = respostas[1] as number;
