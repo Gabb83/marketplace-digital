@@ -5,7 +5,6 @@ import { ProdutosMocks } from "@/src/data/products";
 import { buscarNoArray, buscarNaHashTable } from "@/src/utils/algoritmosBusca";
 import { ArvoreBinariaBusca, embaralharProdutosDeterministico } from "@/src/utils/algoritmosOrdenacao";
 import { filtrarPorCategoriaLinear } from "@/src/utils/algoritmosFiltro";
-import { PerguntaConfig } from "../components/LikertPopup";
 import { PERGUNTAS } from "@/src/config/perguntas";
 import { enviarExperimento } from "@/src/services/googleForms";
 import { medirTempo } from "@/src/utils/medirTempo";
@@ -167,7 +166,7 @@ export function useExperimento() {
           ...prev,
           linearMs: tempoMs,
         }));
-        
+
         setCategoriaSelecionada(categoria);
         setEtapaExperimento("FILTRO_INDEXADO");
         
