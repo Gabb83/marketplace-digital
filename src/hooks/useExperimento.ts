@@ -7,6 +7,7 @@ import { ArvoreBinariaBusca, embaralharProdutosDeterministico } from "@/src/util
 import { filtrarPorCategoriaLinear } from "@/src/utils/algoritmosFiltro";
 import { PerguntaConfig } from "../components/LikertPopup";
 import { PERGUNTAS } from "@/src/config/perguntas";
+import { enviarExperimento } from "@/src/services/googleForms";
 
 export type EtapaFluxo = 
   | "BUSCA_ARRAY" | "BUSCA_HASH" | "AVALIACAO_BUSCA" 
@@ -41,7 +42,7 @@ export function useExperimento() {
 
     fPercepcao: 0,
     fSatisfacao: 0
-});
+  });
 
   const TEMPO_MINIMO_SPINNER = 400;
 
@@ -50,35 +51,6 @@ export function useExperimento() {
       return window.innerWidth < 768 ? "MOBILE" : "DESKTOP";
     }
     return "UNKNOWN";
-  };
-
-  const enviarParaGoogleFormsUnificado = async (payload: any) => {
-    const FORM_URL = "https://docs.google.com/forms/d/e/1FAIpQLSfZVSsHBJcVM2xzvX1pC8xMKpeMAPEaMiZI3ZoLC7zwP_DeCQ/formResponse";
-    const formData = new URLSearchParams();
-    
-    formData.append("entry.432036167", payload.idUsuario);
-    formData.append("entry.314801769", payload.dispositivo);
-    formData.append("entry.603723243", payload.bArray);
-    formData.append("entry.750695508", payload.bHash);
-    formData.append("entry.62742821", payload.bLikert);
-    formData.append("entry.1707197018", payload.oNativo);
-    formData.append("entry.1706201349", payload.oAbb);
-    formData.append("entry.383115611", payload.oLikert);
-    formData.append("entry.1035977829", payload.fLinear); 
-    formData.append("entry.876981547", payload.fIndexado);
-    formData.append("entry.664100771", payload.fLikert);
-
-    try {
-      await fetch(FORM_URL, { 
-        method: "POST", 
-        mode: "no-cors", 
-        headers: { "Content-Type": "application/x-www-form-urlencoded" }, 
-        body: formData.toString() 
-      });
-      console.log("%c✓ [Metodologia] Registro unificado enviado!", "color: #22c55e; font-weight: bold;");
-    } catch (error) {
-      console.error("Falha ao submeter registro:", error);
-    }
   };
 
   const executarBuscaTelemetria = (termo: string) => {
@@ -230,7 +202,7 @@ export function useExperimento() {
       setIsPopupOpen(false);
       setIsLoading(true);
 
-      await enviarParaGoogleFormsUnificado({
+      await enviarExperimento({
         idUsuario: idSessao,
         dispositivo: checkDispositivo(),
 
