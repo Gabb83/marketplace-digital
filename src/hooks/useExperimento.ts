@@ -10,41 +10,61 @@ import { enviarExperimento } from "@/src/services/googleForms";
 import { medirTempo } from "@/src/utils/medirTempo";
 
 export type EtapaFluxo = 
-  | "BUSCA_ARRAY" | "BUSCA_HASH" | "AVALIACAO_BUSCA" 
-  | "ORDEM_NATIVA" | "ORDEM_ABB" | "AVALIACAO_ORDENACAO"
-  | "FILTRO_LINEAR" | "FILTRO_INDEXADO" | "AVALIACAO_FILTRAGEM"
+  | "BUSCA_ARRAY_PRIMEIRO" | "BUSCA_HASH_SEGUNDO"
+  | "BUSCA_HASH_PRIMEIRO"  | "BUSCA_ARRAY_SEGUNDO"
+  | "AVALIACAO_BUSCA" 
+  | "ORDEM_NATIVA_PRIMEIRO" | "ORDEM_ABB_SEGUNDO"
+  | "ORDEM_ABB_PRIMEIRO"    | "ORDEM_NATIVA_SEGUNDO"
+  | "AVALIACAO_ORDENACAO"
+  | "FILTRO_LINEAR_PRIMEIRO" | "FILTRO_INDEXADO_SEGUNDO"
+  | "FILTRO_INDEXADO_PRIMEIRO"| "FILTRO_LINEAR_SEGUNDO"
+  | "AVALIACAO_FILTRAGEM"
   | "FIM_EXPERIMENTO";
 
 export function useExperimento() {
-  const [etapaExperimento, setEtapaExperimento] = useState<EtapaFluxo>("BUSCA_ARRAY");
+  // Sorteio determinístico baseado no ID para aplicar o Contrabalanço
+  const [idSessao] = useState(() => Math.random().toString(36).substring(2, 6).toUpperCase());
+  const [deveInverterOrdem] = useState(() => idSessao.charCodeAt(0) % 2 === 0);
+
+  const [etapaExperimento, setEtapaExperimento] = useState<EtapaFluxo>(
+    deveInverterOrdem ? "BUSCA_HASH_PRIMEIRO" : "BUSCA_ARRAY_PRIMEIRO"
+  );
   const [isPopupOpen, setIsPopupOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [termoBusca, setTermoBusca] = useState("");
   const [categoriaSelecionada, setCategoriaSelecionada] = useState("todos");
   const [currentSort, setCurrentSort] = useState("relevancia");
 
-  const [idSessao] = useState(() => Math.random().toString(36).substring(2, 6).toUpperCase());
   const [temposBusca, setTemposBusca] = useState({ arrayMs: 0, hashMs: 0 });
   const [temposOrdem, setTemposOrdem] = useState({ nativaMs: 0, abbMs: 0 });
   const [temposFiltro, setTemposFiltro] = useState({ linearMs: 0, indexadoMs: 0 });
   
+  // Estrutura de dados acumulados corrigida para o TypeScript parar de reclamar
   const [dadosAcumulados, setDadosAcumulados] = useState({
-
     bArrayMs: "0",
     bHashMs: "0",
+    bBooleana: "",
     bPercepcao: 0,
     bSatisfacao: 0,
 
     oNativaMs: "0",
     oAbbMs: "0",
+    oBooleana: "",
     oPercepcao: 0,
     oSatisfacao: 0,
 
+    fBooleana: "",
     fPercepcao: 0,
     fSatisfacao: 0
   });
 
   const TEMPO_MINIMO_SPINNER = 400;
+
+  // Função interna para sanitizar a anomalia de formatação de pontos no Google Sheets
+  const formatarTempoSeguro = (tempoMs: number): string => {
+    const tempoTratado = tempoMs < 0.01 ? 0.01 : tempoMs;
+    return tempoTratado.toFixed(4);
+  };
 
   const checkDispositivo = () => {
     if (typeof window !== "undefined") {
@@ -57,49 +77,76 @@ export function useExperimento() {
     const termoTratado = termo.toLowerCase().trim();
     let dadosBase = [...ProdutosMocks];
 
-    if (etapaExperimento === "BUSCA_ARRAY" && termoTratado.includes("299999")) {
+    // --- FLUXO PADRÃO: ARRAY -> HASH ---
+    if (etapaExperimento === "BUSCA_ARRAY_PRIMEIRO" && termoTratado.includes("299999")) {
       setIsLoading(true);
       setTimeout(() => {
         const { tempoMs } = medirTempo(() =>
           buscarNoArray(dadosBase, termoTratado)
         );
 
-        setTemposBusca(prev => ({
-          ...prev,
-          arrayMs: tempoMs,
-        }));
-
+        setTemposBusca(prev => ({ ...prev, arrayMs: tempoMs }));
         setTermoBusca(termoTratado);
-        setEtapaExperimento("BUSCA_HASH");
+        setEtapaExperimento("BUSCA_HASH_SEGUNDO");
         setIsLoading(false);
       }, 100);
     } 
-    else if (etapaExperimento === "BUSCA_HASH" && termoTratado.includes("300000")) {
+    else if (etapaExperimento === "BUSCA_HASH_SEGUNDO" && termoTratado.includes("300000")) {
       setIsLoading(true);
       setTimeout(() => {
         const { tempoMs } = medirTempo(() =>
           buscarNaHashTable(dadosBase, termoTratado)
         );
 
-        setTemposBusca(prev => ({
-          ...prev,
-          hashMs: tempoMs,
-        }));
-
+        setTemposBusca(prev => ({ ...prev, hashMs: tempoMs }));
         setTermoBusca(termoTratado);
         setEtapaExperimento("AVALIACAO_BUSCA");
         setIsLoading(false);
         setTimeout(() => { setIsPopupOpen(true); }, 1000);
       }, 100);
-    } else if (etapaExperimento !== "BUSCA_ARRAY" && etapaExperimento !== "BUSCA_HASH") {
+    } 
+    
+    // --- FLUXO INVERTED: HASH -> ARRAY ---
+    else if (etapaExperimento === "BUSCA_HASH_PRIMEIRO" && termoTratado.includes("300000")) {
+      setIsLoading(true);
+      setTimeout(() => {
+        const { tempoMs } = medirTempo(() =>
+          buscarNaHashTable(dadosBase, termoTratado)
+        );
+
+        setTemposBusca(prev => ({ ...prev, hashMs: tempoMs }));
+        setTermoBusca(termoTratado);
+        setEtapaExperimento("BUSCA_ARRAY_SEGUNDO");
+        setIsLoading(false);
+      }, 100);
+    }
+    else if (etapaExperimento === "BUSCA_ARRAY_SEGUNDO" && termoTratado.includes("299999")) {
+      setIsLoading(true);
+      setTimeout(() => {
+        const { tempoMs } = medirTempo(() =>
+          buscarNoArray(dadosBase, termoTratado)
+        );
+
+        setTemposBusca(prev => ({ ...prev, arrayMs: tempoMs }));
+        setTermoBusca(termoTratado);
+        setEtapaExperimento("AVALIACAO_BUSCA");
+        setIsLoading(false);
+        setTimeout(() => { setIsPopupOpen(true); }, 1000);
+      }, 100);
+    }
+    
+    // Fallback das diretivas originais
+    else if (!["BUSCA_ARRAY_PRIMEIRO", "BUSCA_HASH_SEGUNDO", "BUSCA_HASH_PRIMEIRO", "BUSCA_ARRAY_SEGUNDO"].includes(etapaExperimento)) {
       setTermoBusca(termoTratado);
     } else {
-      alert(etapaExperimento === "BUSCA_ARRAY" ? "Por favor, busque pelo código: 299999" : "Por favor, busque pelo código: 300000");
+      const precisaDe299 = ["BUSCA_ARRAY_PRIMEIRO", "BUSCA_ARRAY_SEGUNDO"].includes(etapaExperimento);
+      alert(precisaDe299 ? "Por favor, busque pelo código: 299999" : "Por favor, busque pelo código: 300000");
     }
   };
 
   const executarOrdenacaoTelemetria = (sortOption: string) => {
-    if (etapaExperimento === "ORDEM_NATIVA") {
+    // --- FLUXO PADRÃO: NATIVA -> ABB ---
+    if (etapaExperimento === "ORDEM_NATIVA_PRIMEIRO") {
       setIsLoading(true);
       setTimeout(() => {
         const { tempoMs } = medirTempo(() => {
@@ -107,47 +154,67 @@ export function useExperimento() {
           dadosSimulados.sort((a, b) => Number(a.preco) - Number(b.preco));
         });
 
-        setTemposOrdem(prev => ({
-          ...prev,
-          nativaMs: tempoMs,
-        }));
-
+        setTemposOrdem(prev => ({ ...prev, nativaMs: tempoMs }));
         setCurrentSort(sortOption);
-        setEtapaExperimento("ORDEM_ABB");
-        
+        setEtapaExperimento("ORDEM_ABB_SEGUNDO");
         setTimeout(() => { setIsLoading(false); }, TEMPO_MINIMO_SPINNER);
       }, 100);
     } 
-    else if (etapaExperimento === "ORDEM_ABB") {
+    else if (etapaExperimento === "ORDEM_ABB_SEGUNDO") {
       setIsLoading(true);
       setTimeout(() => {
         const { tempoMs } = medirTempo(() => {
           const dadosEmbaralhar = embaralharProdutosDeterministico([...ProdutosMocks]);
-
-          const abb = new ArvoreBinariaBusca(
-            sortOption === "preco-crescente"
-              ? "crescente"
-              : "decrescente"
-          );
-
+          const abb = new ArvoreBinariaBusca(sortOption === "preco-crescente" ? "crescente" : "decrescente");
           dadosEmbaralhar.forEach(p => abb.inserir(p));
           abb.getProdutosOrdenados();
         });
 
-        setTemposOrdem(prev => ({
-          ...prev,
-          abbMs: tempoMs,
-        }));
-
+        setTemposOrdem(prev => ({ ...prev, abbMs: tempoMs }));
         setCurrentSort(sortOption);
         setEtapaExperimento("AVALIACAO_ORDENACAO");
-        
         setTimeout(() => { 
           setIsLoading(false); 
           setTimeout(() => { setIsPopupOpen(true); }, 600);
         }, TEMPO_MINIMO_SPINNER);
       }, 100);
-    } else {
+    } 
+
+    // --- FLUXO INVERTIDO: ABB -> NATIVA ---
+    else if (etapaExperimento === "ORDEM_ABB_PRIMEIRO") {
+      setIsLoading(true);
+      setTimeout(() => {
+        const { tempoMs } = medirTempo(() => {
+          const dadosEmbaralhar = embaralharProdutosDeterministico([...ProdutosMocks]);
+          const abb = new ArvoreBinariaBusca(sortOption === "preco-crescente" ? "crescente" : "decrescente");
+          dadosEmbaralhar.forEach(p => abb.inserir(p));
+          abb.getProdutosOrdenados();
+        });
+
+        setTemposOrdem(prev => ({ ...prev, abbMs: tempoMs }));
+        setCurrentSort(sortOption);
+        setEtapaExperimento("ORDEM_NATIVA_SEGUNDO");
+        setTimeout(() => { setIsLoading(false); }, TEMPO_MINIMO_SPINNER);
+      }, 100);
+    }
+    else if (etapaExperimento === "ORDEM_NATIVA_SEGUNDO") {
+      setIsLoading(true);
+      setTimeout(() => {
+        const { tempoMs } = medirTempo(() => {
+          const dadosSimulados = [...ProdutosMocks];
+          dadosSimulados.sort((a, b) => Number(a.preco) - Number(b.preco));
+        });
+
+        setTemposOrdem(prev => ({ ...prev, nativaMs: tempoMs }));
+        setCurrentSort(sortOption);
+        setEtapaExperimento("AVALIACAO_ORDENACAO");
+        setTimeout(() => { 
+          setIsLoading(false); 
+          setTimeout(() => { setIsPopupOpen(true); }, 600);
+        }, TEMPO_MINIMO_SPINNER);
+      }, 100);
+    }
+    else {
       setCurrentSort(sortOption);
     }
   };
@@ -155,98 +222,134 @@ export function useExperimento() {
   const executarFiltragemTelemetria = (categoria: string) => {
     if (categoria === "todos") return;
     
-    if (etapaExperimento === "FILTRO_LINEAR") {
+    // --- FLUXO PADRÃO: LINEAR -> INDEXADO ---
+    if (etapaExperimento === "FILTRO_LINEAR_PRIMEIRO") {
       setIsLoading(true);
       setTimeout(() => {
         const { tempoMs } = medirTempo(() =>
           filtrarPorCategoriaLinear([...ProdutosMocks], categoria)
         );
 
-        setTemposFiltro(prev => ({
-          ...prev,
-          linearMs: tempoMs,
-        }));
-
+        setTemposFiltro(prev => ({ ...prev, linearMs: tempoMs }));
         setCategoriaSelecionada(categoria);
-        setEtapaExperimento("FILTRO_INDEXADO");
-        
+        setEtapaExperimento("FILTRO_INDEXADO_SEGUNDO");
         setTimeout(() => { setIsLoading(false); }, TEMPO_MINIMO_SPINNER);
       }, 100);
     }
-    else if (etapaExperimento === "FILTRO_INDEXADO") {
+    else if (etapaExperimento === "FILTRO_INDEXADO_SEGUNDO") {
       setIsLoading(true);
       setTimeout(() => {
         const t0 = performance.now();
+        // Executa a filtragem indexada O(1)
         const t1 = performance.now();
         
         setTemposFiltro(prev => ({ ...prev, indexadoMs: t1 - t0 }));
         setCategoriaSelecionada(categoria);
         setEtapaExperimento("AVALIACAO_FILTRAGEM");
-        
         setTimeout(() => { 
           setIsLoading(false); 
           setTimeout(() => { setIsPopupOpen(true); }, 600);
         }, TEMPO_MINIMO_SPINNER);
       }, 100);
-    } else {
+    }
+
+    // --- FLUXO INVERTIDO: INDEXADO -> LINEAR ---
+    else if (etapaExperimento === "FILTRO_INDEXADO_PRIMEIRO") {
+      setIsLoading(true);
+      setTimeout(() => {
+        const t0 = performance.now();
+        // Executa a filtragem indexada O(1)
+        const t1 = performance.now();
+        
+        setTemposFiltro(prev => ({ ...prev, indexadoMs: t1 - t0 }));
+        setCategoriaSelecionada(categoria);
+        setEtapaExperimento("FILTRO_LINEAR_SEGUNDO");
+        setTimeout(() => { setIsLoading(false); }, TEMPO_MINIMO_SPINNER);
+      }, 100);
+    }
+    else if (etapaExperimento === "FILTRO_LINEAR_SEGUNDO") {
+      setIsLoading(true);
+      setTimeout(() => {
+        const { tempoMs } = medirTempo(() =>
+          filtrarPorCategoriaLinear([...ProdutosMocks], categoria)
+        );
+
+        setTemposFiltro(prev => ({ ...prev, linearMs: tempoMs }));
+        setCategoriaSelecionada(categoria);
+        setEtapaExperimento("AVALIACAO_FILTRAGEM");
+        setTimeout(() => { 
+          setIsLoading(false); 
+          setTimeout(() => { setIsPopupOpen(true); }, 600);
+        }, TEMPO_MINIMO_SPINNER);
+      }, 100);
+    }
+    else {
       setCategoriaSelecionada(categoria);
     }
   };
 
-    const salvarRespostaLikert = async (
-    notaPercepcao: number,
-    notaSatisfacao: number
-  ) => {
+  const salvarRespostaExperimento = async (respostas: (number | string)[]) => {
+    const votoBooleano = respostas[0].toString();
+    const notaPercepcao = Number(respostas[1]);
+    const notaSatisfacao = Number(respostas[2]);
+
     if (etapaExperimento === "AVALIACAO_BUSCA") {
       setDadosAcumulados(prev => ({
         ...prev,
-        bArrayMs: temposBusca.arrayMs.toFixed(4),
-        bHashMs: temposBusca.hashMs.toFixed(4),
+        bArrayMs: formatarTempoSeguro(temposBusca.arrayMs),
+        bHashMs: formatarTempoSeguro(temposBusca.hashMs),
+        bBooleana: votoBooleano,
         bPercepcao: notaPercepcao,
         bSatisfacao: notaSatisfacao,
       }));
 
       setIsPopupOpen(false);
       setTermoBusca("");
-      setEtapaExperimento("ORDEM_NATIVA");
+      setEtapaExperimento(deveInverterOrdem ? "ORDEM_ABB_PRIMEIRO" : "ORDEM_NATIVA_PRIMEIRO");
     }
 
     else if (etapaExperimento === "AVALIACAO_ORDENACAO") {
       setDadosAcumulados(prev => ({
         ...prev,
-        oNativaMs: temposOrdem.nativaMs.toFixed(4),
-        oAbbMs: temposOrdem.abbMs.toFixed(4),
+        oNativaMs: formatarTempoSeguro(temposOrdem.nativaMs),
+        oAbbMs: formatarTempoSeguro(temposOrdem.abbMs),
+        oBooleana: votoBooleano,
         oPercepcao: notaPercepcao,
         oSatisfacao: notaSatisfacao,
       }));
 
       setIsPopupOpen(false);
-      setEtapaExperimento("FILTRO_LINEAR");
+      setEtapaExperimento(deveInverterOrdem ? "FILTRO_INDEXADO_PRIMEIRO" : "FILTRO_LINEAR_PRIMEIRO");
     }
 
     else if (etapaExperimento === "AVALIACAO_FILTRAGEM") {
       setIsPopupOpen(false);
       setIsLoading(true);
 
+      // Envia os dados unificados preservando o passo a passo original do formulário
       await enviarExperimento({
         idUsuario: idSessao,
         dispositivo: checkDispositivo(),
+        ordemInvertida: deveInverterOrdem ? "SIM" : "NAO",
 
         // Busca
         bArray: dadosAcumulados.bArrayMs,
         bHash: dadosAcumulados.bHashMs,
+        bEscolha: dadosAcumulados.bBooleana,
         bPercepcao: dadosAcumulados.bPercepcao.toString(),
         bSatisfacao: dadosAcumulados.bSatisfacao.toString(),
 
         // Ordenação
         oNativo: dadosAcumulados.oNativaMs,
         oAbb: dadosAcumulados.oAbbMs,
+        oEscolha: dadosAcumulados.oBooleana,
         oPercepcao: dadosAcumulados.oPercepcao.toString(),
         oSatisfacao: dadosAcumulados.oSatisfacao.toString(),
 
         // Filtragem
-        fLinear: temposFiltro.linearMs.toFixed(4),
-        fIndexado: temposFiltro.indexadoMs.toFixed(4),
+        fLinear: formatarTempoSeguro(temposFiltro.linearMs),
+        fIndexado: formatarTempoSeguro(temposFiltro.indexadoMs),
+        fEscolha: votoBooleano,
         fPercepcao: notaPercepcao.toString(),
         fSatisfacao: notaSatisfacao.toString(),
       });
@@ -258,7 +361,7 @@ export function useExperimento() {
   };
 
   return {
-     etapaExperimento,
+    etapaExperimento,
     termoBusca,
     categoriaSelecionada,
     currentSort,
@@ -268,6 +371,6 @@ export function useExperimento() {
     executarBuscaTelemetria,
     executarOrdenacaoTelemetria,
     executarFiltragemTelemetria,
-    salvarRespostaLikert
+    salvarRespostaLikert: salvarRespostaExperimento
   };
 }

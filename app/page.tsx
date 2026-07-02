@@ -50,7 +50,7 @@ export default function Home() {
   return (
     <div className="flex flex-col min-h-screen bg-gray-50">
       <div className="w-full bg-purple-600 text-white text-center py-2 px-4 text-sm font-medium shadow-inner flex items-center justify-center gap-2">
-        {etapaExperimento === "BUSCA_ARRAY" && <span>🔬 <strong>Etapa 1/3: Busca (Cenário A)</strong> | Procure pelo código <span className="bg-white text-purple-700 px-1.5 py-0.5 rounded font-bold mx-1">299999</span> na barra de pesquisa.</span>}
+        {etapaExperimento === "BUSCA_ARRAY_PRIMEIRO" ? "BUSCA_ARRAY_PRIMEIRO" : "BUSCA_HASH_PRIMEIRO" && <span>🔬 <strong>Etapa 1/3: Busca (Cenário A)</strong> | Procure pelo código <span className="bg-white text-purple-700 px-1.5 py-0.5 rounded font-bold mx-1">299999</span> na barra de pesquisa.</span>}
         {etapaExperimento === "BUSCA_HASH" && <span>🔬 <strong>Etapa 1/3: Busca (Cenário B)</strong> | Agora limpe a barra, busque por <span className="bg-white text-purple-700 px-1.5 py-0.5 rounded font-bold mx-1">300000</span> e compare.</span>}
         {etapaExperimento === "AVALIACAO_BUSCA" && <span>🎉 Salvando dados parciais de busca...</span>}
         
