@@ -39,7 +39,9 @@ export function useExperimento() {
   const [temposOrdem, setTemposOrdem] = useState({ nativaMs: 0, abbMs: 0 });
   const [temposFiltro, setTemposFiltro] = useState({ linearMs: 0, indexadoMs: 0 });
   
-  const [jaFezRodada1Busca, setJaFezRodada1Busca] = useState(false);
+  const [jaFezRodada1Busca, setJaFezRodada1Busca] = useState<boolean>(false);
+  const [jaFezRodada1Ordem, setJaFezRodada1Ordem] = useState<boolean>(false);
+  const [jafezRodada1Filtro, setJaFezRodada1Filtro] = useState<boolean>(false);
 
   // Estrutura de dados acumulados corrigida para o TypeScript parar de reclamar
   const [dadosAcumulados, setDadosAcumulados] = useState({
@@ -139,79 +141,79 @@ export function useExperimento() {
   };
 
   const executarOrdenacaoTelemetria = (sortOption: string) => {
-    // --- FLUXO PADRÃO: NATIVA -> ABB ---
-    if (etapaExperimento === "ORDEM_NATIVA_PRIMEIRO") {
-      setIsLoading(true);
-      setTimeout(() => {
-        const { tempoMs } = medirTempo(() => {
-          const dadosSimulados = [...ProdutosMocks];
-          dadosSimulados.sort((a, b) => Number(a.preco) - Number(b.preco));
-        });
+  // --- RODADA 1: NATIVA PRIMEIRO -> ABB SEGUNDO ---
+  if (etapaExperimento === "ORDEM_NATIVA_PRIMEIRO") {
+    setIsLoading(true);
+    setTimeout(() => {
+      const { tempoMs } = medirTempo(() => {
+        const dadosSimulados = [...ProdutosMocks];
+        dadosSimulados.sort((a, b) => Number(a.preco) - Number(b.preco));
+      });
 
-        setTemposOrdem(prev => ({ ...prev, nativaMs: tempoMs }));
-        setCurrentSort(sortOption);
-        setEtapaExperimento("ORDEM_ABB_SEGUNDO");
-        setTimeout(() => { setIsLoading(false); }, TEMPO_MINIMO_SPINNER);
-      }, 100);
-    } 
-    else if (etapaExperimento === "ORDEM_ABB_SEGUNDO") {
-      setIsLoading(true);
-      setTimeout(() => {
-        const { tempoMs } = medirTempo(() => {
-          const dadosEmbaralhar = embaralharProdutosDeterministico([...ProdutosMocks]);
-          const abb = new ArvoreBinariaBusca(sortOption === "preco-crescente" ? "crescente" : "decrescente");
-          dadosEmbaralhar.forEach(p => abb.inserir(p));
-          abb.getProdutosOrdenados();
-        });
-
-        setTemposOrdem(prev => ({ ...prev, abbMs: tempoMs }));
-        setCurrentSort(sortOption);
-        setEtapaExperimento("AVALIACAO_ORDENACAO");
-        setTimeout(() => { 
-          setIsLoading(false); 
-          setTimeout(() => { setIsPopupOpen(true); }, 600);
-        }, TEMPO_MINIMO_SPINNER);
-      }, 100);
-    } 
-
-    // --- FLUXO INVERTIDO: ABB -> NATIVA ---
-    else if (etapaExperimento === "ORDEM_ABB_PRIMEIRO") {
-      setIsLoading(true);
-      setTimeout(() => {
-        const { tempoMs } = medirTempo(() => {
-          const dadosEmbaralhar = embaralharProdutosDeterministico([...ProdutosMocks]);
-          const abb = new ArvoreBinariaBusca(sortOption === "preco-crescente" ? "crescente" : "decrescente");
-          dadosEmbaralhar.forEach(p => abb.inserir(p));
-          abb.getProdutosOrdenados();
-        });
-
-        setTemposOrdem(prev => ({ ...prev, abbMs: tempoMs }));
-        setCurrentSort(sortOption);
-        setEtapaExperimento("ORDEM_NATIVA_SEGUNDO");
-        setTimeout(() => { setIsLoading(false); }, TEMPO_MINIMO_SPINNER);
-      }, 100);
-    }
-    else if (etapaExperimento === "ORDEM_NATIVA_SEGUNDO") {
-      setIsLoading(true);
-      setTimeout(() => {
-        const { tempoMs } = medirTempo(() => {
-          const dadosSimulados = [...ProdutosMocks];
-          dadosSimulados.sort((a, b) => Number(a.preco) - Number(b.preco));
-        });
-
-        setTemposOrdem(prev => ({ ...prev, nativaMs: tempoMs }));
-        setCurrentSort(sortOption);
-        setEtapaExperimento("AVALIACAO_ORDENACAO");
-        setTimeout(() => { 
-          setIsLoading(false); 
-          setTimeout(() => { setIsPopupOpen(true); }, 600);
-        }, TEMPO_MINIMO_SPINNER);
-      }, 100);
-    }
-    else {
+      setTemposOrdem(prev => ({ ...prev, nativaMs: tempoMs }));
       setCurrentSort(sortOption);
-    }
-  };
+      setEtapaExperimento("ORDEM_ABB_SEGUNDO");
+      setTimeout(() => { setIsLoading(false); }, TEMPO_MINIMO_SPINNER);
+    }, 100);
+  } 
+  else if (etapaExperimento === "ORDEM_ABB_SEGUNDO") {
+    setIsLoading(true);
+    setTimeout(() => {
+      const { tempoMs } = medirTempo(() => {
+        const dadosEmbaralhar = embaralharProdutosDeterministico([...ProdutosMocks]);
+        const abb = new ArvoreBinariaBusca(sortOption === "preco-crescente" ? "crescente" : "decrescente");
+        dadosEmbaralhar.forEach(p => abb.inserir(p));
+        abb.getProdutosOrdenados();
+      });
+
+      setTemposOrdem(prev => ({ ...prev, abbMs: tempoMs }));
+      setCurrentSort(sortOption);
+      setEtapaExperimento("AVALIACAO_ORDENACAO"); // Avalia a Rodada 1
+      setTimeout(() => { 
+        setIsLoading(false); 
+        setTimeout(() => { setIsPopupOpen(true); }, 600);
+      }, TEMPO_MINIMO_SPINNER);
+    }, 100);
+  } 
+
+  // --- RODADA 2 (INVERTIDA): ABB PRIMEIRO -> NATIVA SEGUNDO ---
+  else if (etapaExperimento === "ORDEM_ABB_PRIMEIRO") {
+    setIsLoading(true);
+    setTimeout(() => {
+      const { tempoMs } = medirTempo(() => {
+        const dadosEmbaralhar = embaralharProdutosDeterministico([...ProdutosMocks]);
+        const abb = new ArvoreBinariaBusca(sortOption === "preco-crescente" ? "crescente" : "decrescente");
+        dadosEmbaralhar.forEach(p => abb.inserir(p));
+        abb.getProdutosOrdenados();
+      });
+
+      setDadosAcumulados(prev => ({ ...prev, oAbbMsInvertido: formatarTempoSeguro(tempoMs) }));
+      setCurrentSort(sortOption);
+      setEtapaExperimento("ORDEM_NATIVA_SEGUNDO");
+      setTimeout(() => { setIsLoading(false); }, TEMPO_MINIMO_SPINNER);
+    }, 100);
+  }
+  else if (etapaExperimento === "ORDEM_NATIVA_SEGUNDO") {
+    setIsLoading(true);
+    setTimeout(() => {
+      const { tempoMs } = medirTempo(() => {
+        const dadosSimulados = [...ProdutosMocks];
+        dadosSimulados.sort((a, b) => Number(a.preco) - Number(b.preco));
+      });
+
+      setDadosAcumulados(prev => ({ ...prev, oNativaMsInvertido: formatarTempoSeguro(tempoMs) }));
+      setCurrentSort(sortOption);
+      setEtapaExperimento("AVALIACAO_ORDENACAO"); // Avalia a Rodada 2
+      setTimeout(() => { 
+        setIsLoading(false); 
+        setTimeout(() => { setIsPopupOpen(true); }, 600);
+      }, TEMPO_MINIMO_SPINNER);
+    }, 100);
+  }
+  else {
+    setCurrentSort(sortOption);
+  }
+};
 
   const executarFiltragemTelemetria = (categoria: string) => {
     if (categoria === "todos") return;
@@ -319,17 +321,28 @@ export function useExperimento() {
     }
 
     else if (etapaExperimento === "AVALIACAO_ORDENACAO") {
-      setDadosAcumulados(prev => ({
-        ...prev,
-        oNativaMs: formatarTempoSeguro(temposOrdem.nativaMs),
-        oAbbMs: formatarTempoSeguro(temposOrdem.abbMs),
-        oBooleana: votoBooleano,
-        oPercepcao: notaPercepcao,
-        oSatisfacao: notaSatisfacao,
-      }));
-
-      setIsPopupOpen(false);
-      setEtapaExperimento(deveInverterOrdem ? "FILTRO_INDEXADO_PRIMEIRO" : "FILTRO_LINEAR_PRIMEIRO");
+      if (!jaFezRodada1Ordem) {
+        setDadosAcumulados(prev => ({
+          ...prev,
+          oNativaMs: formatarTempoSeguro(temposOrdem.nativaMs),
+          oAbbMs: formatarTempoSeguro(temposOrdem.abbMs),
+          oBooleanaNormal: votoBooleano,
+          oPercepcaoNormal: notaPercepcao,
+          oSatisfacaoNormal: notaSatisfacao,
+        }));
+        setIsPopupOpen(false);
+        setJaFezRodada1Ordem(true);
+        setEtapaExperimento("ORDEM_ABB_PRIMEIRO"); // Inverte Ordenação
+      } else {
+        setDadosAcumulados(prev => ({
+          ...prev,
+          oBooleanaInvertido: votoBooleano,
+          oPercepcaoInvertido: notaPercepcao,
+          oSatisfacaoInvertido: notaSatisfacao,
+        }));
+        setIsPopupOpen(false);
+        setEtapaExperimento("FILTRO_LINEAR_PRIMEIRO"); // Avança para Filtragem
+      }
     }
 
     else if (etapaExperimento === "AVALIACAO_FILTRAGEM") {
