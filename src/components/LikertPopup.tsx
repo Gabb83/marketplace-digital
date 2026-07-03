@@ -35,7 +35,7 @@ export default function LikertPopup({ isOpen, onEnviarRespostas, perguntas }: Li
 
   const perguntaAtual = perguntas[passo];
   const opcoesLikert = [1, 2, 3, 4, 5];
-  const opcoesBooleanas = ["Opção 1", "Opção 2"];
+  const opcoesBooleanas = ["1° Operação", "2° Operação"];
 
   const handleAvancar = () => {
     if (respostaAtual === null) return;

@@ -158,16 +158,12 @@ export default function Home() {
         isOpen={isPopupOpen}
         perguntas={perguntas}
         onEnviarRespostas={(respostas) => {
-          const escolhaBooleana = respostas[0] as string;
-          const notaPercepcao = respostas[1] as number;
-          const notaSatisfacao = respostas[2] as number;
+          // respostas[0] -> escolhaBooleana (string)
+          // respostas[1] -> notaPercepcao (number)
+          // respostas[2] -> notaSatisfacao (number)
 
-          console.log(escolhaBooleana);
-
-          salvarRespostaLikert(
-            notaPercepcao,
-            notaSatisfacao
-          );
+          // Passa o array completo direto para o hook tratar e salvar
+          salvarRespostaLikert(respostas);
         }}
       />
     </div>

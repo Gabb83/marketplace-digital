@@ -39,6 +39,8 @@ export function useExperimento() {
   const [temposOrdem, setTemposOrdem] = useState({ nativaMs: 0, abbMs: 0 });
   const [temposFiltro, setTemposFiltro] = useState({ linearMs: 0, indexadoMs: 0 });
   
+  const [jaFezRodada1Busca, setJaFezRodada1Busca] = useState(false);
+
   // Estrutura de dados acumulados corrigida para o TypeScript parar de reclamar
   const [dadosAcumulados, setDadosAcumulados] = useState({
     bArrayMs: "0",
@@ -77,65 +79,57 @@ export function useExperimento() {
     const termoTratado = termo.toLowerCase().trim();
     let dadosBase = [...ProdutosMocks];
 
-    // --- FLUXO PADRÃO: ARRAY -> HASH ---
+    // 1️⃣ RODADA 1: ARRAY PRIMEIRO (Digita 299999)
     if (etapaExperimento === "BUSCA_ARRAY_PRIMEIRO" && termoTratado.includes("299999")) {
       setIsLoading(true);
       setTimeout(() => {
-        const { tempoMs } = medirTempo(() =>
-          buscarNoArray(dadosBase, termoTratado)
-        );
-
+        const { tempoMs } = medirTempo(() => buscarNoArray(dadosBase, termoTratado));
         setTemposBusca(prev => ({ ...prev, arrayMs: tempoMs }));
         setTermoBusca(termoTratado);
-        setEtapaExperimento("BUSCA_HASH_SEGUNDO");
+        setEtapaExperimento("BUSCA_HASH_SEGUNDO"); 
         setIsLoading(false);
       }, 100);
     } 
+    // 2️⃣ RODADA 1: HASH SEGUNDO (Digita 300000)
     else if (etapaExperimento === "BUSCA_HASH_SEGUNDO" && termoTratado.includes("300000")) {
       setIsLoading(true);
       setTimeout(() => {
-        const { tempoMs } = medirTempo(() =>
-          buscarNaHashTable(dadosBase, termoTratado)
-        );
-
+        const { tempoMs } = medirTempo(() => buscarNaHashTable(dadosBase, termoTratado));
         setTemposBusca(prev => ({ ...prev, hashMs: tempoMs }));
         setTermoBusca(termoTratado);
-        setEtapaExperimento("AVALIACAO_BUSCA");
+        setEtapaExperimento("AVALIACAO_BUSCA"); // Chama o modal para avaliar a Rodada 1
         setIsLoading(false);
         setTimeout(() => { setIsPopupOpen(true); }, 1000);
       }, 100);
-    } 
-    
-    // --- FLUXO INVERTED: HASH -> ARRAY ---
+    }
+  
+  // 3️⃣ RODADA 2 (INVERTIDA): HASH PRIMEIRO (Digita 300000)
     else if (etapaExperimento === "BUSCA_HASH_PRIMEIRO" && termoTratado.includes("300000")) {
       setIsLoading(true);
       setTimeout(() => {
-        const { tempoMs } = medirTempo(() =>
-          buscarNaHashTable(dadosBase, termoTratado)
-        );
-
-        setTemposBusca(prev => ({ ...prev, hashMs: tempoMs }));
+        const { tempoMs } = medirTempo(() => buscarNaHashTable(dadosBase, termoTratado));
+        // Guardamos o tempo invertido direto no acumulador para não sobrescrever o temposBusca.hashMs da rodada 1
+        setDadosAcumulados(prev => ({ ...prev, bHashMsInvertido: formatarTempoSeguro(tempoMs) }));
         setTermoBusca(termoTratado);
-        setEtapaExperimento("BUSCA_ARRAY_SEGUNDO");
+        setEtapaExperimento("BUSCA_ARRAY_SEGUNDO"); 
         setIsLoading(false);
       }, 100);
     }
+    // 4️⃣ RODADA 2 (INVERTIDA): ARRAY SEGUNDO (Digita 299999)
     else if (etapaExperimento === "BUSCA_ARRAY_SEGUNDO" && termoTratado.includes("299999")) {
       setIsLoading(true);
       setTimeout(() => {
-        const { tempoMs } = medirTempo(() =>
-          buscarNoArray(dadosBase, termoTratado)
-        );
-
-        setTemposBusca(prev => ({ ...prev, arrayMs: tempoMs }));
+        const { tempoMs } = medirTempo(() => buscarNoArray(dadosBase, termoTratado));
+        // Guardamos o tempo invertido direto no acumulador para não sobrescrever o temposBusca.arrayMs da rodada 1
+        setDadosAcumulados(prev => ({ ...prev, bArrayMsInvertido: formatarTempoSeguro(tempoMs) }));
         setTermoBusca(termoTratado);
-        setEtapaExperimento("AVALIACAO_BUSCA");
+        setEtapaExperimento("AVALIACAO_BUSCA"); // Chama o modal para avaliar a Rodada 2
         setIsLoading(false);
         setTimeout(() => { setIsPopupOpen(true); }, 1000);
       }, 100);
     }
     
-    // Fallback das diretivas originais
+    // Travas originais de digitação
     else if (!["BUSCA_ARRAY_PRIMEIRO", "BUSCA_HASH_SEGUNDO", "BUSCA_HASH_PRIMEIRO", "BUSCA_ARRAY_SEGUNDO"].includes(etapaExperimento)) {
       setTermoBusca(termoTratado);
     } else {
@@ -294,18 +288,34 @@ export function useExperimento() {
     const notaSatisfacao = Number(respostas[2]);
 
     if (etapaExperimento === "AVALIACAO_BUSCA") {
-      setDadosAcumulados(prev => ({
-        ...prev,
-        bArrayMs: formatarTempoSeguro(temposBusca.arrayMs),
-        bHashMs: formatarTempoSeguro(temposBusca.hashMs),
-        bBooleana: votoBooleano,
-        bPercepcao: notaPercepcao,
-        bSatisfacao: notaSatisfacao,
-      }));
+      if (!jaFezRodada1Busca) {
+        // 💾 Salva os dados coletados na Rodada 1 (Normal)
+        setDadosAcumulados(prev => ({
+          ...prev,
+          bArrayMs: formatarTempoSeguro(temposBusca.arrayMs),
+          bHashMs: formatarTempoSeguro(temposBusca.hashMs),
+          bBooleanaNormal: votoBooleano,
+          bPercepcaoNormal: notaPercepcao,
+          bSatisfacaoNormal: notaSatisfacao,
+        }));
 
-      setIsPopupOpen(false);
-      setTermoBusca("");
-      setEtapaExperimento(deveInverterOrdem ? "ORDEM_ABB_PRIMEIRO" : "ORDEM_NATIVA_PRIMEIRO");
+        setIsPopupOpen(false);
+        setTermoBusca("");
+        setJaFezRodada1Busca(true); // Bloqueia a repetição
+        setEtapaExperimento("BUSCA_HASH_PRIMEIRO"); // 🔄 Força o início imediato da rodada invertida
+      } else {
+        // 💾 Salva os dados coletados na Rodada 2 (Invertida)
+        setDadosAcumulados(prev => ({
+          ...prev,
+          bBooleanaInvertido: votoBooleano,
+          bPercepcaoInvertido: notaPercepcao,
+          bSatisfacaoInvertido: notaSatisfacao,
+        }));
+
+        setIsPopupOpen(false);
+        setTermoBusca("");
+        setEtapaExperimento("ORDEM_NATIVA_PRIMEIRO"); // ➡️ Agora sim, avança para o cenário de Ordenação
+      }
     }
 
     else if (etapaExperimento === "AVALIACAO_ORDENACAO") {
