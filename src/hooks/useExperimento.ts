@@ -10,41 +10,73 @@ import { enviarExperimento } from "@/src/services/googleForms";
 import { medirTempo } from "@/src/utils/medirTempo";
 
 export type EtapaFluxo = 
-  | "BUSCA_ARRAY" | "BUSCA_HASH" | "AVALIACAO_BUSCA" 
-  | "ORDEM_NATIVA" | "ORDEM_ABB" | "AVALIACAO_ORDENACAO"
-  | "FILTRO_LINEAR" | "FILTRO_INDEXADO" | "AVALIACAO_FILTRAGEM"
+  | "BUSCA_ARRAY_PRIMEIRO" | "BUSCA_HASH_SEGUNDO"
+  | "BUSCA_HASH_PRIMEIRO"  | "BUSCA_ARRAY_SEGUNDO"
+  | "AVALIACAO_BUSCA" 
+  | "ORDEM_NATIVA_PRIMEIRO" | "ORDEM_ABB_SEGUNDO"
+  | "ORDEM_ABB_PRIMEIRO"    | "ORDEM_NATIVA_SEGUNDO"
+  | "AVALIACAO_ORDENACAO"
+  | "FILTRO_LINEAR_PRIMEIRO" | "FILTRO_INDEXADO_SEGUNDO"
+  | "FILTRO_INDEXADO_PRIMEIRO"| "FILTRO_LINEAR_SEGUNDO"
+  | "AVALIACAO_FILTRAGEM"
   | "FIM_EXPERIMENTO";
 
 export function useExperimento() {
-  const [etapaExperimento, setEtapaExperimento] = useState<EtapaFluxo>("BUSCA_ARRAY");
+  // Sorteio determinístico baseado no ID para aplicar o Contrabalanço
+  const [idSessao] = useState(() => Math.random().toString(36).substring(2, 6).toUpperCase());
+  const [deveInverterOrdem] = useState(() => idSessao.charCodeAt(0) % 2 === 0);
+
+  const [etapaExperimento, setEtapaExperimento] = useState<EtapaFluxo>(
+    deveInverterOrdem ? "BUSCA_HASH_PRIMEIRO" : "BUSCA_ARRAY_PRIMEIRO"
+  );
   const [isPopupOpen, setIsPopupOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [termoBusca, setTermoBusca] = useState("");
   const [categoriaSelecionada, setCategoriaSelecionada] = useState("todos");
   const [currentSort, setCurrentSort] = useState("relevancia");
 
-  const [idSessao] = useState(() => Math.random().toString(36).substring(2, 6).toUpperCase());
   const [temposBusca, setTemposBusca] = useState({ arrayMs: 0, hashMs: 0 });
   const [temposOrdem, setTemposOrdem] = useState({ nativaMs: 0, abbMs: 0 });
   const [temposFiltro, setTemposFiltro] = useState({ linearMs: 0, indexadoMs: 0 });
   
-  const [dadosAcumulados, setDadosAcumulados] = useState({
+  const [jaFezRodada1Busca, setJaFezRodada1Busca] = useState<boolean>(false);
+  const [jaFezRodada1Ordem, setJaFezRodada1Ordem] = useState<boolean>(false);
+  const [jaFezRodada1Filtro, setJaFezRodada1Filtro] = useState<boolean>(false);
 
+  // Estrutura de dados acumulados corrigida para o TypeScript parar de reclamar
+  const [dadosAcumulados, setDadosAcumulados] = useState({
     bArrayMs: "0",
     bHashMs: "0",
+    bBooleana: "",
     bPercepcao: 0,
     bSatisfacao: 0,
 
     oNativaMs: "0",
     oAbbMs: "0",
+    oBooleana: "",
     oPercepcao: 0,
     oSatisfacao: 0,
 
+    fBooleana: "",
     fPercepcao: 0,
     fSatisfacao: 0
   });
 
   const TEMPO_MINIMO_SPINNER = 400;
+
+  // Função interna para sanitizar a anomalia de formatação de pontos no Google Sheets
+  const formatarTempoSeguro = (tempoMs: number): string => {
+    const tempoTratado = tempoMs < 0.01 ? 0.01 : tempoMs;
+    return tempoTratado.toFixed(4);
+  };
+
+  const rodarTelemetria = (acaoAlgoritmo: () => void) => {
+    setIsLoading(true);
+    setTimeout(() => {
+      acaoAlgoritmo();
+      setIsLoading(false);
+    }, 400); // 400ms fixos de spinner para o usuário notar a transição
+  };
 
   const checkDispositivo = () => {
     if (typeof window !== "undefined") {
@@ -57,96 +89,101 @@ export function useExperimento() {
     const termoTratado = termo.toLowerCase().trim();
     let dadosBase = [...ProdutosMocks];
 
-    if (etapaExperimento === "BUSCA_ARRAY" && termoTratado.includes("299999")) {
-      setIsLoading(true);
-      setTimeout(() => {
-        const { tempoMs } = medirTempo(() =>
-          buscarNoArray(dadosBase, termoTratado)
-        );
-
-        setTemposBusca(prev => ({
-          ...prev,
-          arrayMs: tempoMs,
-        }));
-
+    // 1️⃣ RODADA 1: ARRAY PRIMEIRO (Digita 299999)
+    if (etapaExperimento === "BUSCA_ARRAY_PRIMEIRO" && termoTratado.includes("299999")) {
+      rodarTelemetria(() => {
+        const { tempoMs } = medirTempo(() => buscarNoArray(dadosBase, termoTratado));
+        setTemposBusca(prev => ({ ...prev, arrayMs: tempoMs }));
         setTermoBusca(termoTratado);
-        setEtapaExperimento("BUSCA_HASH");
-        setIsLoading(false);
-      }, 100);
+        setEtapaExperimento("BUSCA_HASH_SEGUNDO");
+      });
     } 
-    else if (etapaExperimento === "BUSCA_HASH" && termoTratado.includes("300000")) {
-      setIsLoading(true);
-      setTimeout(() => {
-        const { tempoMs } = medirTempo(() =>
-          buscarNaHashTable(dadosBase, termoTratado)
-        );
-
-        setTemposBusca(prev => ({
-          ...prev,
-          hashMs: tempoMs,
-        }));
-
+    // 2️⃣ RODADA 1: HASH SEGUNDO (Digita 300000)
+    else if (etapaExperimento === "BUSCA_HASH_SEGUNDO" && termoTratado.includes("300000")) {
+      rodarTelemetria(() => {
+        const { tempoMs } = medirTempo(() => buscarNaHashTable(dadosBase, termoTratado));
+        setTemposBusca(prev => ({ ...prev, hashMs: tempoMs }));
         setTermoBusca(termoTratado);
         setEtapaExperimento("AVALIACAO_BUSCA");
-        setIsLoading(false);
-        setTimeout(() => { setIsPopupOpen(true); }, 1000);
-      }, 100);
-    } else if (etapaExperimento !== "BUSCA_ARRAY" && etapaExperimento !== "BUSCA_HASH") {
+      });
+    }
+  
+  // 3️⃣ RODADA 2 (INVERTIDA): HASH PRIMEIRO (Digita 300000)
+    else if (etapaExperimento === "BUSCA_HASH_PRIMEIRO" && termoTratado.includes("300000")) {
+      rodarTelemetria(() => {
+        const { tempoMs } = medirTempo(() => buscarNaHashTable(dadosBase, termoTratado));
+        setDadosAcumulados(prev => ({ ...prev, bHashMsInvertido: formatarTempoSeguro(tempoMs) }));
+        setTermoBusca(termoTratado);
+        setEtapaExperimento("BUSCA_ARRAY_SEGUNDO");
+      });
+    }
+    // 4️⃣ RODADA 2 (INVERTIDA): ARRAY SEGUNDO (Digita 299999)
+    else if (etapaExperimento === "BUSCA_ARRAY_SEGUNDO" && termoTratado.includes("299999")) {
+     rodarTelemetria(() => {
+        const { tempoMs } = medirTempo(() => buscarNoArray(dadosBase, termoTratado));
+        setDadosAcumulados(prev => ({ ...prev, bArrayMsInvertido: formatarTempoSeguro(tempoMs) }));
+        setTermoBusca(termoTratado);
+        setEtapaExperimento("AVALIACAO_BUSCA");
+        setTimeout(() => setIsPopupOpen(true), 600);
+      });
+    }
+    
+    // Travas originais de digitação
+    else if (!["BUSCA_ARRAY_PRIMEIRO", "BUSCA_HASH_SEGUNDO", "BUSCA_HASH_PRIMEIRO", "BUSCA_ARRAY_SEGUNDO"].includes(etapaExperimento)) {
       setTermoBusca(termoTratado);
     } else {
-      alert(etapaExperimento === "BUSCA_ARRAY" ? "Por favor, busque pelo código: 299999" : "Por favor, busque pelo código: 300000");
+      const precisaDe299 = ["BUSCA_ARRAY_PRIMEIRO", "BUSCA_ARRAY_SEGUNDO"].includes(etapaExperimento);
+      alert(precisaDe299 ? "Por favor, busque pelo código: 299999" : "Por favor, busque pelo código: 300000");
     }
   };
 
   const executarOrdenacaoTelemetria = (sortOption: string) => {
-    if (etapaExperimento === "ORDEM_NATIVA") {
-      setIsLoading(true);
-      setTimeout(() => {
-        const { tempoMs } = medirTempo(() => {
-          const dadosSimulados = [...ProdutosMocks];
-          dadosSimulados.sort((a, b) => Number(a.preco) - Number(b.preco));
-        });
-
-        setTemposOrdem(prev => ({
-          ...prev,
-          nativaMs: tempoMs,
-        }));
-
+    // --- RODADA 1: NATIVA PRIMEIRO -> ABB SEGUNDO ---
+    if (etapaExperimento === "ORDEM_NATIVA_PRIMEIRO") {
+      rodarTelemetria(() => {
+        const { tempoMs } = medirTempo(() => [...ProdutosMocks].sort((a, b) => Number(a.preco) - Number(b.preco)));
+        setTemposOrdem(prev => ({ ...prev, nativaMs: tempoMs }));
         setCurrentSort(sortOption);
-        setEtapaExperimento("ORDEM_ABB");
-        
-        setTimeout(() => { setIsLoading(false); }, TEMPO_MINIMO_SPINNER);
-      }, 100);
+        setEtapaExperimento("ORDEM_ABB_SEGUNDO");
+      });
     } 
-    else if (etapaExperimento === "ORDEM_ABB") {
-      setIsLoading(true);
-      setTimeout(() => {
+    else if (etapaExperimento === "ORDEM_ABB_SEGUNDO") {
+      rodarTelemetria(() => {
         const { tempoMs } = medirTempo(() => {
           const dadosEmbaralhar = embaralharProdutosDeterministico([...ProdutosMocks]);
-
-          const abb = new ArvoreBinariaBusca(
-            sortOption === "preco-crescente"
-              ? "crescente"
-              : "decrescente"
-          );
-
+          const abb = new ArvoreBinariaBusca(sortOption === "preco-crescente" ? "crescente" : "decrescente");
           dadosEmbaralhar.forEach(p => abb.inserir(p));
           abb.getProdutosOrdenados();
         });
-
-        setTemposOrdem(prev => ({
-          ...prev,
-          abbMs: tempoMs,
-        }));
-
+        setTemposOrdem(prev => ({ ...prev, abbMs: tempoMs }));
         setCurrentSort(sortOption);
         setEtapaExperimento("AVALIACAO_ORDENACAO");
-        
-        setTimeout(() => { 
-          setIsLoading(false); 
-          setTimeout(() => { setIsPopupOpen(true); }, 600);
-        }, TEMPO_MINIMO_SPINNER);
-      }, 100);
+        setTimeout(() => setIsPopupOpen(true), 600);
+      });
+    } 
+
+    // --- RODADA 2 (INVERTIDA): ABB PRIMEIRO -> NATIVA SEGUNDO ---
+    else if (etapaExperimento === "ORDEM_ABB_PRIMEIRO") {
+     rodarTelemetria(() => {
+        const { tempoMs } = medirTempo(() => {
+          const dadosEmbaralhar = embaralharProdutosDeterministico([...ProdutosMocks]);
+          const abb = new ArvoreBinariaBusca(sortOption === "preco-crescente" ? "crescente" : "decrescente");
+          dadosEmbaralhar.forEach(p => abb.inserir(p));
+          abb.getProdutosOrdenados();
+        });
+        setDadosAcumulados(prev => ({ ...prev, oAbbMsInvertido: formatarTempoSeguro(tempoMs) }));
+        setCurrentSort(sortOption);
+        setEtapaExperimento("ORDEM_NATIVA_SEGUNDO");
+      });
+    }
+    else if (etapaExperimento === "ORDEM_NATIVA_SEGUNDO") {
+      rodarTelemetria(() => {
+        const { tempoMs } = medirTempo(() => [...ProdutosMocks].sort((a, b) => Number(a.preco) - Number(b.preco)));
+        setDadosAcumulados(prev => ({ ...prev, oNativaMsInvertido: formatarTempoSeguro(tempoMs) }));
+        setCurrentSort(sortOption);
+        setEtapaExperimento("AVALIACAO_ORDENACAO");
+        setTimeout(() => setIsPopupOpen(true), 600);
+      });
     } else {
       setCurrentSort(sortOption);
     }
@@ -155,110 +192,209 @@ export function useExperimento() {
   const executarFiltragemTelemetria = (categoria: string) => {
     if (categoria === "todos") return;
     
-    if (etapaExperimento === "FILTRO_LINEAR") {
-      setIsLoading(true);
-      setTimeout(() => {
-        const { tempoMs } = medirTempo(() =>
-          filtrarPorCategoriaLinear([...ProdutosMocks], categoria)
-        );
-
-        setTemposFiltro(prev => ({
-          ...prev,
-          linearMs: tempoMs,
-        }));
-
+    // --- RODADA 1: LINEAR PRIMEIRO -> INDEXADO SEGUNDO ---
+    if (etapaExperimento === "FILTRO_LINEAR_PRIMEIRO") {
+      rodarTelemetria(() => {
+        const { tempoMs } = medirTempo(() => filtrarPorCategoriaLinear([...ProdutosMocks], categoria));
+        setTemposFiltro(prev => ({ ...prev, linearMs: tempoMs }));
         setCategoriaSelecionada(categoria);
-        setEtapaExperimento("FILTRO_INDEXADO");
-        
-        setTimeout(() => { setIsLoading(false); }, TEMPO_MINIMO_SPINNER);
-      }, 100);
+        setEtapaExperimento("FILTRO_INDEXADO_SEGUNDO");
+      });
     }
-    else if (etapaExperimento === "FILTRO_INDEXADO") {
-      setIsLoading(true);
-      setTimeout(() => {
+    else if (etapaExperimento === "FILTRO_INDEXADO_SEGUNDO") {
+     rodarTelemetria(() => {
         const t0 = performance.now();
+        // Operação O(1) indexada aqui
         const t1 = performance.now();
-        
         setTemposFiltro(prev => ({ ...prev, indexadoMs: t1 - t0 }));
         setCategoriaSelecionada(categoria);
         setEtapaExperimento("AVALIACAO_FILTRAGEM");
-        
-        setTimeout(() => { 
-          setIsLoading(false); 
-          setTimeout(() => { setIsPopupOpen(true); }, 600);
-        }, TEMPO_MINIMO_SPINNER);
-      }, 100);
+        setTimeout(() => setIsPopupOpen(true), 600);
+      });
+    }
+
+    // --- RODADA 2 (INVERTIDA): INDEXADO PRIMEIRO -> LINEAR SEGUNDO ---
+    else if (etapaExperimento === "FILTRO_INDEXADO_PRIMEIRO") {
+      rodarTelemetria(() => {
+        const t0 = performance.now();
+        // Operação O(1) indexada aqui
+        const t1 = performance.now();
+        setDadosAcumulados(prev => ({ ...prev, fIndexadoMsInvertido: formatarTempoSeguro(t1 - t0) }));
+        setCategoriaSelecionada(categoria);
+        setEtapaExperimento("FILTRO_LINEAR_SEGUNDO");
+      });
+    }
+    else if (etapaExperimento === "FILTRO_LINEAR_SEGUNDO") {
+      rodarTelemetria(() => {
+        const { tempoMs } = medirTempo(() => filtrarPorCategoriaLinear([...ProdutosMocks], categoria));
+        setDadosAcumulados(prev => ({ ...prev, fLinearMsInvertido: formatarTempoSeguro(tempoMs) }));
+        setCategoriaSelecionada(categoria);
+        setEtapaExperimento("AVALIACAO_FILTRAGEM");
+        setTimeout(() => setIsPopupOpen(true), 600);
+      });
     } else {
       setCategoriaSelecionada(categoria);
     }
   };
 
-    const salvarRespostaLikert = async (
-    notaPercepcao: number,
-    notaSatisfacao: number
-  ) => {
-    if (etapaExperimento === "AVALIACAO_BUSCA") {
-      setDadosAcumulados(prev => ({
-        ...prev,
-        bArrayMs: temposBusca.arrayMs.toFixed(4),
-        bHashMs: temposBusca.hashMs.toFixed(4),
-        bPercepcao: notaPercepcao,
-        bSatisfacao: notaSatisfacao,
-      }));
+  const salvarRespostaExperimento = async (respostas: (number | string)[]) => {
+    const votoBooleano = respostas[0].toString();
+    const notaPercepcao = Number(respostas[1]);
+    const notaSatisfacao = Number(respostas[2]);
 
-      setIsPopupOpen(false);
-      setTermoBusca("");
-      setEtapaExperimento("ORDEM_NATIVA");
+    if (etapaExperimento === "AVALIACAO_BUSCA") {
+      if (!jaFezRodada1Busca) {
+        // 💾 Salva os dados coletados na Rodada 1 (Normal)
+        setDadosAcumulados(prev => ({
+          ...prev,
+          bArrayMs: formatarTempoSeguro(temposBusca.arrayMs),
+          bHashMs: formatarTempoSeguro(temposBusca.hashMs),
+          bBooleanaNormal: votoBooleano,
+          bPercepcaoNormal: notaPercepcao,
+          bSatisfacaoNormal: notaSatisfacao,
+        }));
+
+        setIsPopupOpen(false);
+        setTermoBusca("");
+        setJaFezRodada1Busca(true); // Bloqueia a repetição
+        setEtapaExperimento("BUSCA_HASH_PRIMEIRO"); // 🔄 Força o início imediato da rodada invertida
+      } else {
+        // 💾 Salva os dados coletados na Rodada 2 (Invertida)
+        setDadosAcumulados(prev => ({
+          ...prev,
+          bBooleanaInvertido: votoBooleano,
+          bPercepcaoInvertido: notaPercepcao,
+          bSatisfacaoInvertido: notaSatisfacao,
+        }));
+
+        setIsPopupOpen(false);
+        setTermoBusca("");
+        setEtapaExperimento("ORDEM_NATIVA_PRIMEIRO"); // ➡️ Agora sim, avança para o cenário de Ordenação
+      }
     }
 
     else if (etapaExperimento === "AVALIACAO_ORDENACAO") {
-      setDadosAcumulados(prev => ({
-        ...prev,
-        oNativaMs: temposOrdem.nativaMs.toFixed(4),
-        oAbbMs: temposOrdem.abbMs.toFixed(4),
-        oPercepcao: notaPercepcao,
-        oSatisfacao: notaSatisfacao,
-      }));
-
-      setIsPopupOpen(false);
-      setEtapaExperimento("FILTRO_LINEAR");
+      if (!jaFezRodada1Ordem) {
+        setDadosAcumulados(prev => ({
+          ...prev,
+          oNativaMs: formatarTempoSeguro(temposOrdem.nativaMs),
+          oAbbMs: formatarTempoSeguro(temposOrdem.abbMs),
+          oBooleanaNormal: votoBooleano,
+          oPercepcaoNormal: notaPercepcao,
+          oSatisfacaoNormal: notaSatisfacao,
+        }));
+        setIsPopupOpen(false);
+        setJaFezRodada1Ordem(true);
+        setEtapaExperimento("ORDEM_ABB_PRIMEIRO"); // Inverte Ordenação
+      } else {
+        setDadosAcumulados(prev => ({
+          ...prev,
+          oBooleanaInvertido: votoBooleano,
+          oPercepcaoInvertido: notaPercepcao,
+          oSatisfacaoInvertido: notaSatisfacao,
+        }));
+        setIsPopupOpen(false);
+        setEtapaExperimento("FILTRO_LINEAR_PRIMEIRO"); // Avança para Filtragem
+      }
     }
 
     else if (etapaExperimento === "AVALIACAO_FILTRAGEM") {
-      setIsPopupOpen(false);
-      setIsLoading(true);
+      if (!jaFezRodada1Filtro) {
+        setDadosAcumulados(prev => ({
+          ...prev,
+          fLinearMs: formatarTempoSeguro(temposFiltro.linearMs),
+          fIndexadoMs: formatarTempoSeguro(temposFiltro.indexadoMs),
+          fBooleanaNormal: votoBooleano,
+          fPercepcaoNormal: notaPercepcao,
+          fSatisfacaoNormal: notaSatisfacao,
+        }));
+        setIsPopupOpen(false);
+        setJaFezRodada1Filtro(true);
+        setEtapaExperimento("FILTRO_INDEXADO_PRIMEIRO"); // Inverte Filtragem
+      } else {
+        setIsPopupOpen(false);
+        setIsLoading(true);
 
-      await enviarExperimento({
-        idUsuario: idSessao,
-        dispositivo: checkDispositivo(),
+        // Envia os dados unificados preservando o passo a passo original do formulário
+        await enviarExperimento({
+          idUsuario: idSessao,
+          dispositivo: checkDispositivo(),
+          ordemInvertida: deveInverterOrdem ? "SIM" : "NAO",
 
-        // Busca
-        bArray: dadosAcumulados.bArrayMs,
-        bHash: dadosAcumulados.bHashMs,
-        bPercepcao: dadosAcumulados.bPercepcao.toString(),
-        bSatisfacao: dadosAcumulados.bSatisfacao.toString(),
+          // Busca
+          bArray: dadosAcumulados.bArrayMs,
+          bHash: dadosAcumulados.bHashMs,
+          bEscolha: dadosAcumulados.bBooleana,
+          bPercepcao: dadosAcumulados.bPercepcao.toString(),
+          bSatisfacao: dadosAcumulados.bSatisfacao.toString(),
 
-        // Ordenação
-        oNativo: dadosAcumulados.oNativaMs,
-        oAbb: dadosAcumulados.oAbbMs,
-        oPercepcao: dadosAcumulados.oPercepcao.toString(),
-        oSatisfacao: dadosAcumulados.oSatisfacao.toString(),
+          // Ordenação
+          oNativo: dadosAcumulados.oNativaMs,
+          oAbb: dadosAcumulados.oAbbMs,
+          oEscolha: dadosAcumulados.oBooleana,
+          oPercepcao: dadosAcumulados.oPercepcao.toString(),
+          oSatisfacao: dadosAcumulados.oSatisfacao.toString(),
 
-        // Filtragem
-        fLinear: temposFiltro.linearMs.toFixed(4),
-        fIndexado: temposFiltro.indexadoMs.toFixed(4),
-        fPercepcao: notaPercepcao.toString(),
-        fSatisfacao: notaSatisfacao.toString(),
-      });
+          // Filtragem
+          fLinear: formatarTempoSeguro(temposFiltro.linearMs),
+          fIndexado: formatarTempoSeguro(temposFiltro.indexadoMs),
+          fEscolha: votoBooleano,
+          fPercepcao: notaPercepcao.toString(),
+          fSatisfacao: notaSatisfacao.toString(),
 
-      setIsLoading(false);
-      setCategoriaSelecionada("todos");
-      setEtapaExperimento("FIM_EXPERIMENTO");
+          /*
+            idUsuario: idSessao,
+          dispositivo: checkDispositivo(),
+
+          // BUSCA
+          bArrayNormal: dadosAcumulados.bArrayMs,
+          bHashNormal: dadosAcumulados.bHashMs,
+          bEscolhaNormal: dadosAcumulados.bBooleanaNormal,
+          bPercepcaoNormal: dadosAcumulados.bPercepcaoNormal.toString(),
+          bSatisfacaoNormal: dadosAcumulados.bSatisfacaoNormal.toString(),
+          bHashInvertido: dadosAcumulados.bHashMsInvertido,
+          bArrayInvertido: dadosAcumulados.bArrayMsInvertido,
+          bEscolhaInvertido: dadosAcumulados.bBooleanaInvertido,
+          bPercepcaoInvertido: dadosAcumulados.bPercepcaoInvertido.toString(),
+          bSatisfacaoInvertido: dadosAcumulados.bSatisfacaoInvertido.toString(),
+
+          // ORDENAÇÃO
+          oNativoNormal: dadosAcumulados.oNativaMs,
+          oAbbNormal: dadosAcumulados.oAbbMs,
+          oEscolhaNormal: dadosAcumulados.oBooleanaNormal,
+          oPercepcaoNormal: dadosAcumulados.oPercepcaoNormal.toString(),
+          oSatisfacaoNormal: dadosAcumulados.oSatisfacaoNormal.toString(),
+          oAbbInvertido: dadosAcumulados.oAbbMsInvertido,
+          oNativoInvertido: dadosAcumulados.oNativaMsInvertido,
+          oEscolhaInvertido: dadosAcumulados.oBooleanaInvertido,
+          oPercepcaoInvertido: dadosAcumulados.oPercepcaoInvertido.toString(),
+          oSatisfacaoInvertido: dadosAcumulados.oSatisfacaoInvertido.toString(),
+
+          // FILTRAGEM
+          fLinearNormal: dadosAcumulados.fLinearMs,
+          fIndexadoNormal: dadosAcumulados.fIndexadoMs,
+          fEscolhaNormal: dadosAcumulados.fBooleanaNormal,
+          fPercepcaoNormal: dadosAcumulados.fPercepcaoNormal.toString(),
+          fSatisfacaoNormal: dadosAcumulados.fSatisfacaoNormal.toString(),
+          fIndexadoInvertido: dadosAcumulados.fIndexadoMsInvertido,
+          fLinearInvertido: dadosAcumulados.fLinearMsInvertido,
+          fEscolhaInvertido: votoBooleano,
+          fPercepcaoInvertido: notaPercepcao.toString(),
+          fSatisfacaoInvertido: notaSatisfacao.toString(),
+        */
+
+
+        });
+
+        setIsLoading(false);
+        setCategoriaSelecionada("todos");
+        setEtapaExperimento("FIM_EXPERIMENTO");
+      }
     }
   };
 
   return {
-     etapaExperimento,
+    etapaExperimento,
     termoBusca,
     categoriaSelecionada,
     currentSort,
@@ -268,6 +404,6 @@ export function useExperimento() {
     executarBuscaTelemetria,
     executarOrdenacaoTelemetria,
     executarFiltragemTelemetria,
-    salvarRespostaLikert
+    salvarRespostaLikert: salvarRespostaExperimento
   };
 }

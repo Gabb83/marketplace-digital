@@ -49,21 +49,48 @@ export default function Home() {
 
   return (
     <div className="flex flex-col min-h-screen bg-gray-50">
-      <div className="w-full bg-purple-600 text-white text-center py-2 px-4 text-sm font-medium shadow-inner flex items-center justify-center gap-2">
-        {etapaExperimento === "BUSCA_ARRAY" && <span>🔬 <strong>Etapa 1/3: Busca (Cenário A)</strong> | Procure pelo código <span className="bg-white text-purple-700 px-1.5 py-0.5 rounded font-bold mx-1">299999</span> na barra de pesquisa.</span>}
-        {etapaExperimento === "BUSCA_HASH" && <span>🔬 <strong>Etapa 1/3: Busca (Cenário B)</strong> | Agora limpe a barra, busque por <span className="bg-white text-purple-700 px-1.5 py-0.5 rounded font-bold mx-1">300000</span> e compare.</span>}
-        {etapaExperimento === "AVALIACAO_BUSCA" && <span>🎉 Salvando dados parciais de busca...</span>}
-        
-        {etapaExperimento === "ORDEM_NATIVA" && <span>🔬 <strong>Etapa 2/3: Ordenação (Cenário A)</strong> | Escolha uma ordenação no menu (ex: <i>Menor Preço</i>) para rodar o método 1.</span>}
-        {etapaExperimento === "ORDEM_ABB" && <span>🔬 <strong>Etapa 2/3: Ordenação (Cenário B)</strong> | Mude a ordenação para <strong>qualquer outra opção</strong> para rodar o método 2 e concluir.</span>}
-        {etapaExperimento === "AVALIACAO_ORDENACAO" && <span>🎉 Salvando dados parciais de ordenação...</span>}
-        
-        {etapaExperimento === "FILTRO_LINEAR" && <span>🔬 <strong>Etapa 3/3: Filtragem (Cenário A)</strong> | Clique em qualquer categoria na barra lateral (ex: <i>Eletrônicos</i>).</span>}
-        {etapaExperimento === "FILTRO_INDEXADO" && <span>🔬 <strong>Etapa 3/3: Filtragem (Cenário B)</strong> | Mude para **outra categoria qualquer** para rodar o método otimizado.</span>}
-        {etapaExperimento === "AVALIACAO_FILTRAGEM" && <span>🎉 Enviando relatório consolidado final ao banco...</span>}
-        
-        {etapaExperimento === "FIM_EXPERIMENTO" && <span>🏆 Experimento concluído! Sua participação foi unificada com sucesso na base de dados. Obrigado!</span>}
-      </div>
+     <div className="w-full bg-purple-600 text-white text-center py-2 px-4 text-sm font-medium shadow-inner flex items-center justify-center gap-2">
+      {/* ────────────────── CENÁRIO 1: BUSCA ────────────────── */}
+      {etapaExperimento === "BUSCA_ARRAY_PRIMEIRO" && (
+        <span>🔬 <strong>Etapa 1/3: Busca (Cenário A)</strong> | Procure pelo código <span className="bg-white text-purple-700 px-1.5 py-0.5 rounded font-bold mx-1">299999</span> na barra de pesquisa.</span>
+      )}
+      {etapaExperimento === "BUSCA_HASH_SEGUNDO" && (
+        <span>🔬 <strong>Etapa 1/3: Busca (Cenário B)</strong> | Agora limpe a barra, busque por <span className="bg-white text-purple-700 px-1.5 py-0.5 rounded font-bold mx-1">300000</span> e compare.</span>
+      )}
+      
+      {/* Se o fluxo for invertido (Contrabalanço) */}
+      {etapaExperimento === "BUSCA_HASH_PRIMEIRO" && (
+        <span>🔬 <strong>Etapa 1/3: Busca (Cenário A)</strong> | Procure pelo código <span className="bg-white text-purple-700 px-1.5 py-0.5 rounded font-bold mx-1">300000</span> na barra de pesquisa.</span>
+      )}
+      {etapaExperimento === "BUSCA_ARRAY_SEGUNDO" && (
+        <span>🔬 <strong>Etapa 1/3: Busca (Cenário B)</strong> | Agora limpe a barra, busque por <span className="bg-white text-purple-700 px-1.5 py-0.5 rounded font-bold mx-1">299999</span> e compare.</span>
+      )}
+      
+      {etapaExperimento === "AVALIACAO_BUSCA" && <span>🎉 Respondendo avaliação de busca...</span>}
+      
+      {/* ────────────────── CENÁRIO 2: ORDENAÇÃO ────────────────── */}
+      {(etapaExperimento === "ORDEM_NATIVA_PRIMEIRO" || etapaExperimento === "ORDEM_ABB_PRIMEIRO") && (
+        <span>🔬 <strong>Etapa 2/3: Ordenação (Cenário A)</strong> | Escolha uma ordenação no menu (ex: <i>Menor Preço</i>) para rodar o método 1.</span>
+      )}
+      {(etapaExperimento === "ORDEM_ABB_SEGUNDO" || etapaExperimento === "ORDEM_NATIVA_SEGUNDO") && (
+        <span>🔬 <strong>Etapa 2/3: Ordenação (Cenário B)</strong> | Mude a ordenação para <strong>qualquer outra opção</strong> para rodar o método 2 e concluir.</span>
+      )}
+      {etapaExperimento === "AVALIACAO_ORDENACAO" && <span>🎉 Respondendo avaliação de ordenação...</span>}
+      
+      {/* ────────────────── CENÁRIO 3: FILTRAGEM ────────────────── */}
+      {(etapaExperimento === "FILTRO_LINEAR_PRIMEIRO" || etapaExperimento === "FILTRO_INDEXADO_PRIMEIRO") && (
+        <span>🔬 <strong>Etapa 3/3: Filtragem (Cenário A)</strong> | Clique em qualquer categoria na barra lateral (ex: <i>Eletrônicos</i>).</span>
+      )}
+      {(etapaExperimento === "FILTRO_INDEXADO_SEGUNDO" || etapaExperimento === "FILTRO_LINEAR_SEGUNDO") && (
+        <span>🔬 <strong>Etapa 3/3: Filtragem (Cenário B)</strong> | Mude para **outra categoria qualquer** para rodar o método 2.</span>
+      )}
+      {etapaExperimento === "AVALIACAO_FILTRAGEM" && <span>🎉 Enviando relatório consolidado final ao banco...</span>}
+      
+      {/* ────────────────── FIM ────────────────── */}
+      {etapaExperimento === "FIM_EXPERIMENTO" && (
+        <span>🏆 Experimento concluído! Sua participação foi unificada com sucesso na base de dados. Obrigado!</span>
+      )}
+    </div>
 
       <HeaderComponent onSearch={executarBuscaTelemetria} />
 
@@ -131,16 +158,12 @@ export default function Home() {
         isOpen={isPopupOpen}
         perguntas={perguntas}
         onEnviarRespostas={(respostas) => {
-          const escolhaBooleana = respostas[0] as string;
-          const notaPercepcao = respostas[1] as number;
-          const notaSatisfacao = respostas[2] as number;
+          // respostas[0] -> escolhaBooleana (string)
+          // respostas[1] -> notaPercepcao (number)
+          // respostas[2] -> notaSatisfacao (number)
 
-          console.log(escolhaBooleana);
-
-          salvarRespostaLikert(
-            notaPercepcao,
-            notaSatisfacao
-          );
+          // Passa o array completo direto para o hook tratar e salvar
+          salvarRespostaLikert(respostas);
         }}
       />
     </div>

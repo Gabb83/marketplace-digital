@@ -27,7 +27,7 @@ export function obterProdutosProcessados(
 
   if (currentCategoria !== "todos") {
     // Se for o cenário indexado (O(1)) ou fim do experimento, usa o mapa
-    if (etapaExperimento === "FILTRO_INDEXADO" || etapaExperimento === "FIM_EXPERIMENTO") {
+    if (etapaExperimento === "FILTRO_INDEXADO_PRIMEIRO" || etapaExperimento === "FILTRO_INDEXADO_SEGUNDO" || etapaExperimento === "FIM_EXPERIMENTO") {
       const indexador = obterIndexador();
       dados = [...indexador.obterProdutosFiltrados(currentCategoria)];
     } else {

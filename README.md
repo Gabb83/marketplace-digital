@@ -29,8 +29,20 @@ Este projeto foi construído utilizando as melhores tecnologias do ecossistema R
     ```
 5. Abra o navegador e acesse `http://localhost:3000` para ver o aplicativo em ação.
 
-## Deploy on Vercel
+## Estrutura do Projeto
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+```
+├── app/
+├── public/
+├── src
+│   ├── components/
+│   ├── config
+|   |   └── perguntas.ts
+│   ├── data
+|   |   └── products.ts
+│   ├── hooks
+|   |   └── useExperimento.ts
+│   ├── services
+|   |   └── googleForms.ts
+|   └── utils/
+```
