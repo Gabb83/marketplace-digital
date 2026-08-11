@@ -44,23 +44,40 @@ export function useExperimento() {
   const [jaFezRodada1Filtro, setJaFezRodada1Filtro] = useState<boolean>(false);
 
   // Estrutura de dados acumulados corrigida para o TypeScript parar de reclamar
-  const [dadosAcumulados, setDadosAcumulados] = useState({
-    bArrayMs: "0",
-    bHashMs: "0",
-    bBooleana: "",
-    bPercepcao: 0,
-    bSatisfacao: 0,
+  const [dadosAcumulados, setDadosAcumulados] = useState<{
+    // Busca
+    bArrayMs?: string;
+    bHashMs?: string;
+    bBooleanaNormal?: string;
+    bPercepcaoNormal?: number;
+    bSatisfacaoNormal?: number;
+    bHashMsInvertido?: string;
+    bArrayMsInvertido?: string;
+    bBooleanaInvertido?: string;
+    bPercepcaoInvertido?: number;
+    bSatisfacaoInvertido?: number;
 
-    oNativaMs: "0",
-    oAbbMs: "0",
-    oBooleana: "",
-    oPercepcao: 0,
-    oSatisfacao: 0,
+    // Ordenação
+    oNativaMs?: string;
+    oAbbMs?: string;
+    oBooleanaNormal?: string;
+    oPercepcaoNormal?: number;
+    oSatisfacaoNormal?: number;
+    oAbbMsInvertido?: string;
+    oNativaMsInvertido?: string;
+    oBooleanaInvertido?: string;
+    oPercepcaoInvertido?: number;
+    oSatisfacaoInvertido?: number;
 
-    fBooleana: "",
-    fPercepcao: 0,
-    fSatisfacao: 0
-  });
+    // Filtragem
+    fLinearMs?: string;
+    fIndexadoMs?: string;
+    fBooleanaNormal?: string;
+    fPercepcaoNormal?: number;
+    fSatisfacaoNormal?: number;
+    fIndexadoMsInvertido?: string;
+    fLinearMsInvertido?: string;
+  }>({});
 
   const TEMPO_MINIMO_SPINNER = 400;
 
@@ -319,71 +336,42 @@ export function useExperimento() {
         await enviarExperimento({
           idUsuario: idSessao,
           dispositivo: checkDispositivo(),
-          ordemInvertida: deveInverterOrdem ? "SIM" : "NAO",
 
-          // Busca
-          bArray: dadosAcumulados.bArrayMs,
-          bHash: dadosAcumulados.bHashMs,
-          bEscolha: dadosAcumulados.bBooleana,
-          bPercepcao: dadosAcumulados.bPercepcao.toString(),
-          bSatisfacao: dadosAcumulados.bSatisfacao.toString(),
+          // 🔍 BUSCA
+          bArrayNormal: dadosAcumulados.bArrayMs ?? "",
+          bHashNormal: dadosAcumulados.bHashMs ?? "",
+          bEscolhaNormal: dadosAcumulados.bBooleanaNormal ?? "",
+          bPercepcaoNormal: (dadosAcumulados.bPercepcaoNormal ?? 0).toString(),
+          bSatisfacaoNormal: (dadosAcumulados.bSatisfacaoNormal ?? 0).toString(),
+          bHashInvertido: dadosAcumulados.bHashMsInvertido ?? "",
+          bArrayInvertido: dadosAcumulados.bArrayMsInvertido ?? "",
+          bEscolhaInvertido: dadosAcumulados.bBooleanaInvertido ?? "",
+          bPercepcaoInvertido: (dadosAcumulados.bPercepcaoInvertido ?? 0).toString(),
+          bSatisfacaoInvertido: (dadosAcumulados.bSatisfacaoInvertido ?? 0).toString(),
 
-          // Ordenação
-          oNativo: dadosAcumulados.oNativaMs,
-          oAbb: dadosAcumulados.oAbbMs,
-          oEscolha: dadosAcumulados.oBooleana,
-          oPercepcao: dadosAcumulados.oPercepcao.toString(),
-          oSatisfacao: dadosAcumulados.oSatisfacao.toString(),
+          // 📊 ORDENAÇÃO
+          oNativoNormal: dadosAcumulados.oNativaMs ?? "",
+          oAbbNormal: dadosAcumulados.oAbbMs ?? "",
+          oEscolhaNormal: dadosAcumulados.oBooleanaNormal ?? "",
+          oPercepcaoNormal: (dadosAcumulados.oPercepcaoNormal ?? 0).toString(),
+          oSatisfacaoNormal: (dadosAcumulados.oSatisfacaoNormal ?? 0).toString(),
+          oAbbInvertido: dadosAcumulados.oAbbMsInvertido ?? "",
+          oNativoInvertido: dadosAcumulados.oNativaMsInvertido ?? "",
+          oEscolhaInvertido: dadosAcumulados.oBooleanaInvertido ?? "",
+          oPercepcaoInvertido: (dadosAcumulados.oPercepcaoInvertido ?? 0).toString(),
+          oSatisfacaoInvertido: (dadosAcumulados.oSatisfacaoInvertido ?? 0).toString(),
 
-          // Filtragem
-          fLinear: formatarTempoSeguro(temposFiltro.linearMs),
-          fIndexado: formatarTempoSeguro(temposFiltro.indexadoMs),
-          fEscolha: votoBooleano,
-          fPercepcao: notaPercepcao.toString(),
-          fSatisfacao: notaSatisfacao.toString(),
-
-          /*
-            idUsuario: idSessao,
-          dispositivo: checkDispositivo(),
-
-          // BUSCA
-          bArrayNormal: dadosAcumulados.bArrayMs,
-          bHashNormal: dadosAcumulados.bHashMs,
-          bEscolhaNormal: dadosAcumulados.bBooleanaNormal,
-          bPercepcaoNormal: dadosAcumulados.bPercepcaoNormal.toString(),
-          bSatisfacaoNormal: dadosAcumulados.bSatisfacaoNormal.toString(),
-          bHashInvertido: dadosAcumulados.bHashMsInvertido,
-          bArrayInvertido: dadosAcumulados.bArrayMsInvertido,
-          bEscolhaInvertido: dadosAcumulados.bBooleanaInvertido,
-          bPercepcaoInvertido: dadosAcumulados.bPercepcaoInvertido.toString(),
-          bSatisfacaoInvertido: dadosAcumulados.bSatisfacaoInvertido.toString(),
-
-          // ORDENAÇÃO
-          oNativoNormal: dadosAcumulados.oNativaMs,
-          oAbbNormal: dadosAcumulados.oAbbMs,
-          oEscolhaNormal: dadosAcumulados.oBooleanaNormal,
-          oPercepcaoNormal: dadosAcumulados.oPercepcaoNormal.toString(),
-          oSatisfacaoNormal: dadosAcumulados.oSatisfacaoNormal.toString(),
-          oAbbInvertido: dadosAcumulados.oAbbMsInvertido,
-          oNativoInvertido: dadosAcumulados.oNativaMsInvertido,
-          oEscolhaInvertido: dadosAcumulados.oBooleanaInvertido,
-          oPercepcaoInvertido: dadosAcumulados.oPercepcaoInvertido.toString(),
-          oSatisfacaoInvertido: dadosAcumulados.oSatisfacaoInvertido.toString(),
-
-          // FILTRAGEM
-          fLinearNormal: dadosAcumulados.fLinearMs,
-          fIndexadoNormal: dadosAcumulados.fIndexadoMs,
-          fEscolhaNormal: dadosAcumulados.fBooleanaNormal,
-          fPercepcaoNormal: dadosAcumulados.fPercepcaoNormal.toString(),
-          fSatisfacaoNormal: dadosAcumulados.fSatisfacaoNormal.toString(),
-          fIndexadoInvertido: dadosAcumulados.fIndexadoMsInvertido,
-          fLinearInvertido: dadosAcumulados.fLinearMsInvertido,
+          // 🧪 FILTRAGEM (Pega do acumulador o normal, e o invertido direto das variáveis locais do modal atual)
+          fLinearNormal: dadosAcumulados.fLinearMs ?? "",
+          fIndexadoNormal: dadosAcumulados.fIndexadoMs ?? "",
+          fEscolhaNormal: dadosAcumulados.fBooleanaNormal ?? "",
+          fPercepcaoNormal: (dadosAcumulados.fPercepcaoNormal ?? 0).toString(),
+          fSatisfacaoNormal: (dadosAcumulados.fSatisfacaoNormal ?? 0).toString(),
+          fIndexadoInvertido: dadosAcumulados.fIndexadoMsInvertido ?? "",
+          fLinearInvertido: dadosAcumulados.fLinearMsInvertido ?? "",
           fEscolhaInvertido: votoBooleano,
           fPercepcaoInvertido: notaPercepcao.toString(),
           fSatisfacaoInvertido: notaSatisfacao.toString(),
-        */
-
-
         });
 
         setIsLoading(false);
